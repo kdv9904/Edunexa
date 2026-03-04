@@ -1,182 +1,203 @@
 import React from 'react'
-import { FaArrowLeftLong, FaPlus } from 'react-icons/fa6';
-import { useNavigate } from 'react-router-dom';
-import img from "../../assets/empty.jpg"
-import {useSelector} from "react-redux"
-import useCreatorCourses from "../../customHooks/getCreatorCourse"
-import { FaEdit } from 'react-icons/fa';
+import { FaArrowLeftLong, FaPlus, FaEdit } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import useCreatorCourses from '../../customHooks/getCreatorCourse'
+import img from '../../assets/empty.jpg'
 
 const Courses = () => {
-  useCreatorCourses();
-  const navigate = useNavigate();
-  const { creatorCourseData } = useSelector(state=>state.course);
-  
+  useCreatorCourses()
+  const navigate = useNavigate()
+  const { creatorCourseData } = useSelector(state => state.course)
+  const count = creatorCourseData?.length || 0
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4 sm:p-6 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${15 + Math.random() * 10}s`
-            }}
-          />
-        ))}
-      </div>
+        .co-root { min-height: 100vh; background: #07090f; font-family: 'DM Sans', sans-serif; position: relative; overflow-x: hidden; padding: 48px 28px 72px; }
+        .co-glow1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.06) 0%, transparent 70%); top: -150px; right: -150px; pointer-events: none; z-index: 0; }
+        .co-glow2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.05) 0%, transparent 70%); bottom: -100px; left: -100px; pointer-events: none; z-index: 0; }
+        .co-grid { position: fixed; inset: 0; opacity: .022; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px); background-size: 56px 56px; }
 
-      <div className='relative z-10 max-w-7xl mx-auto'>
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-           <div className='flex items-center gap-4'>
-              <button 
-                onClick={()=>navigate("/dashboard")}
-                className="group w-12 h-12 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-2xl rotate-45 shadow-2xl transition-all duration-500 hover:rotate-90 hover:scale-110 flex items-center justify-center"
-              >
-                <FaArrowLeftLong className="w-5 h-5 text-white -rotate-45 transition-transform duration-500 group-hover:-rotate-90" />
+        .co-inner { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+
+        /* Top row */
+        .co-toprow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; flex-wrap: wrap; gap: 16px; }
+        .co-topleft { display: flex; align-items: center; gap: 16px; }
+        .co-back { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .co-back:hover { color: #fff; background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2); }
+        .co-eyebrow { font-size: 11px; font-weight: 700; color: #10b981; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+        .co-title { font-family: 'Playfair Display', serif; font-size: clamp(22px, 2.5vw, 30px); font-weight: 700; color: #fff; margin: 0; line-height: 1.2; }
+        .co-title em { color: #10b981; font-style: italic; }
+
+        .co-btn-primary { padding: 10px 20px; border-radius: 10px; background: #10b981; border: none; color: #07090f; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 7px; transition: background .2s, transform .15s, box-shadow .2s; }
+        .co-btn-primary:hover { background: #0ea472; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.28); }
+
+        /* Table card */
+        .co-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; overflow: hidden; }
+
+        /* Table */
+        .co-table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead tr { background: rgba(255,255,255,.025); border-bottom: 1px solid rgba(255,255,255,.06); }
+        th { padding: 13px 20px; text-align: left; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        td { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.05); font-size: 13px; color: rgba(255,255,255,.65); vertical-align: middle; }
+        tbody tr:hover td { background: rgba(255,255,255,.02); }
+
+        .co-thumb { width: 52px; height: 34px; border-radius: 7px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); flex-shrink: 0; }
+        .co-course-name { font-weight: 600; color: #fff; font-size: 13px; }
+        .co-price { font-weight: 700; color: #10b981; font-size: 13px; }
+        .co-price-na { color: rgba(255,255,255,.25); font-size: 13px; }
+
+        .co-pill { padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+        .co-pill-published { background: rgba(16,185,129,.1); color: #10b981; border: 1px solid rgba(16,185,129,.2); }
+        .co-pill-draft { background: rgba(245,158,11,.1); color: #f59e0b; border: 1px solid rgba(245,158,11,.2); }
+
+        .co-edit-btn { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; color: rgba(255,255,255,.4); }
+        .co-edit-btn:hover { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.25); color: #10b981; }
+
+        /* Mobile cards */
+        .co-mobile-list { display: flex; flex-direction: column; gap: 10px; }
+        .co-mobile-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; transition: border-color .2s; }
+        .co-mobile-card:hover { border-color: rgba(16,185,129,.2); }
+        .co-mobile-info { flex: 1; }
+        .co-mobile-name { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .co-mobile-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        /* Empty state */
+        .co-empty { text-align: center; padding: 56px 24px; }
+        .co-empty-icon { font-size: 36px; opacity: .2; margin-bottom: 12px; }
+        .co-empty-title { font-family: 'Playfair Display', serif; font-size: 18px; color: rgba(255,255,255,.25); margin-bottom: 6px; }
+        .co-empty-sub { font-size: 12px; color: rgba(255,255,255,.15); margin-bottom: 20px; }
+
+        @media (max-width: 700px) { .co-desktop { display: none !important; } }
+        @media (min-width: 701px) { .co-mobile { display: none !important; } }
+      `}</style>
+
+      <div className="co-root">
+        <div className="co-glow1" /><div className="co-glow2" /><div className="co-grid" />
+
+        <div className="co-inner">
+
+          {/* Top row */}
+          <div className="co-toprow">
+            <div className="co-topleft">
+              <button className="co-back" onClick={() => navigate('/dashboard')}>
+                <FaArrowLeftLong size={11} /> Dashboard
               </button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  My Courses
-                </h1>
-                <p className="text-gray-300 mt-1">Manage and create your courses</p>
+                <div className="co-eyebrow">Educator</div>
+                <h1 className="co-title">My <em>Courses</em></h1>
               </div>
-           </div>
-           <button 
-             className='group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-2xl font-semibold px-6 py-3 shadow-2xl hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 flex items-center gap-2'
-             onClick={()=>navigate("/create-course")}
-           >
-             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-             <FaPlus className="w-4 h-4 relative z-10" />
-             <span className="relative z-10">Create Course</span>
-           </button>
-        </div>
+            </div>
+            <button className="co-btn-primary" onClick={() => navigate('/create-course')}>
+              <FaPlus size={11} /> Create Course
+            </button>
+          </div>
 
-        {/* Desktop Table */}
-        <div className="hidden md:block bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 overflow-x-auto">
-           <table className='min-w-full'>
-            <thead className='border-b border-white/10'>
-              <tr className=''>
-                <th className='text-left py-4 px-6 text-gray-300 font-semibold'>Course</th>
-                <th className='text-left py-4 px-6 text-gray-300 font-semibold'>Price</th>
-                <th className='text-left py-4 px-6 text-gray-300 font-semibold'>Status</th>
-                <th className='text-left py-4 px-6 text-gray-300 font-semibold'>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {creatorCourseData?.map((course,index)=>(
-              <tr key={index} className='border-b border-white/10 hover:bg-white/5 transition duration-300 group'>
-                <td className='py-4 px-6 flex items-center gap-4'>
-                  {course?.thumbnail ? 
-                    <img src={course?.thumbnail} alt='course name' className='w-20 h-12 object-cover rounded-lg border border-white/10'/> :
-                    <img src={img} alt='course name' className='w-20 h-12 object-cover rounded-lg border border-white/10'/>
-                  }
-                  <span className="text-white font-medium group-hover:text-cyan-300 transition-colors">{course?.title}</span>
-                </td>
-                {course?.price ?
-                  <td className='py-4 px-6 text-cyan-400 font-semibold'>{course?.price}₹</td> :
-                  <td className='py-4 px-6 text-gray-400'>₹ NA</td>
-                }
-                <td className="px-6 py-4">
-                  <span className={`px-4 py-2 rounded-full text-sm font-medium ${
-                    course.isPublished ? 
-                    "bg-green-500/20 text-green-400 border border-green-400/30" : 
-                    "bg-yellow-500/20 text-yellow-400 border border-yellow-400/30"
-                  }`}>
-                    {course.isPublished ? "Published" : "Draft"}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <button 
-                    onClick={()=>navigate(`/editcourse/${course?._id}`)}
-                    className="group w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-gray-300 hover:text-cyan-400 hover:border-cyan-400/30 hover:bg-cyan-500/10 transition-all duration-300"
-                  >
-                    <FaEdit className='w-4 h-4 group-hover:scale-110 transition-transform'/>
-                  </button>
-                </td>
-              </tr>
-              ))}
-            </tbody>
-           </table>
-           
-           {(!creatorCourseData || creatorCourseData.length === 0) && (
-             <div className="text-center py-12">
-               <div className="text-6xl mb-4">📚</div>
-               <h3 className="text-xl font-semibold text-white mb-2">No courses yet</h3>
-               <p className="text-gray-400">Create your first course to get started</p>
-             </div>
-           )}
-        </div>
-
-        {/* Mobile Cards */}
-        <div className='md:hidden space-y-4'>
-          {creatorCourseData?.map((course,index)=>(
-           <div key={index} className="bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-2xl border border-white/10 p-4 hover:border-cyan-400/30 transition-all duration-300 group">
-              <div className='flex gap-4 items-center'>
-                {course?.thumbnail ? 
-                  <img src={course?.thumbnail} alt="image" className='w-16 h-16 rounded-lg object-cover border border-white/10'/> :
-                  <img src={img} alt="image" className='w-16 h-16 rounded-lg object-cover border border-white/10'/>
-                }
-                <div className='flex-1'>
-                  <h2 className='font-semibold text-white group-hover:text-cyan-300 transition-colors'>{course.title}</h2>
-                  {course?.price ?
-                    <p className='text-cyan-400 font-medium text-sm mt-1'>{course?.price}₹</p> :
-                    <p className='text-gray-400 text-sm mt-1'>₹ NA</p>
-                  }
-                </div>
-                <button 
-                  onClick={()=>navigate(`/editcourse/${course?._id}`)}
-                  className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-gray-300 hover:text-cyan-400 hover:border-cyan-400/30 transition-all duration-300"
-                >
-                  <FaEdit className='w-4 h-4'/>
+          {/* Desktop Table */}
+          <div className="co-card co-desktop">
+            {count === 0 ? (
+              <div className="co-empty">
+                <div className="co-empty-icon">📚</div>
+                <div className="co-empty-title">No courses yet</div>
+                <div className="co-empty-sub">Create your first course to get started</div>
+                <button className="co-btn-primary" style={{ margin: '0 auto' }} onClick={() => navigate('/create-course')}>
+                  <FaPlus size={11} /> Create Course
                 </button>
               </div>
-              <div className="mt-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  course.isPublished ? 
-                  "bg-green-500/20 text-green-400 border border-green-400/30" : 
-                  "bg-yellow-500/20 text-yellow-400 border border-yellow-400/30"
-                }`}>
-                  {course.isPublished ? "Published" : "Draft"}
-                </span>
+            ) : (
+              <div className="co-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Course</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {creatorCourseData.map((course, i) => (
+                      <tr key={i}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <img
+                              src={course?.thumbnail || img}
+                              alt={course?.title}
+                              className="co-thumb"
+                            />
+                            <span className="co-course-name">{course?.title}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {course?.price
+                            ? <span className="co-price">₹{course.price}</span>
+                            : <span className="co-price-na">—</span>
+                          }
+                        </td>
+                        <td>
+                          <span className={`co-pill ${course.isPublished ? 'co-pill-published' : 'co-pill-draft'}`}>
+                            {course.isPublished ? '● Published' : '● Draft'}
+                          </span>
+                        </td>
+                        <td>
+                          <button className="co-edit-btn" onClick={() => navigate(`/editcourse/${course?._id}`)}>
+                            <FaEdit size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-           </div>
-          ))}
-          
-          {(!creatorCourseData || creatorCourseData.length === 0) && (
-            <div className="text-center py-8 bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-2xl border border-white/10">
-              <div className="text-4xl mb-3">📚</div>
-              <h3 className="text-lg font-semibold text-white mb-1">No courses yet</h3>
-              <p className="text-gray-400 text-sm">Create your first course to get started</p>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="co-mobile">
+            {count === 0 ? (
+              <div className="co-card">
+                <div className="co-empty">
+                  <div className="co-empty-icon">📚</div>
+                  <div className="co-empty-title">No courses yet</div>
+                  <div className="co-empty-sub">Create your first course to get started</div>
+                  <button className="co-btn-primary" style={{ margin: '0 auto' }} onClick={() => navigate('/create-course')}>
+                    <FaPlus size={11} /> Create Course
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="co-mobile-list">
+                {creatorCourseData.map((course, i) => (
+                  <div className="co-mobile-card" key={i}>
+                    <img src={course?.thumbnail || img} alt={course?.title} className="co-thumb" style={{ width: 56, height: 40 }} />
+                    <div className="co-mobile-info">
+                      <div className="co-mobile-name">{course?.title}</div>
+                      <div className="co-mobile-meta">
+                        <span className={`co-pill ${course.isPublished ? 'co-pill-published' : 'co-pill-draft'}`}>
+                          {course.isPublished ? '● Published' : '● Draft'}
+                        </span>
+                        {course?.price
+                          ? <span className="co-price">₹{course.price}</span>
+                          : <span className="co-price-na" style={{ fontSize: 11 }}>No price</span>
+                        }
+                      </div>
+                    </div>
+                    <button className="co-edit-btn" onClick={() => navigate(`/editcourse/${course?._id}`)}>
+                      <FaEdit size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
-
-      {/* Custom CSS */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+    </>
   )
 }
 
