@@ -380,8 +380,8 @@ const styles = {
   backBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 7,
     background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
-    borderRadius: 8, padding: '7px 14px', color: 'rgba(255,255,255,.45)',
-    fontSize: 12, fontWeight: 500, cursor: 'pointer', marginBottom: 28,
+    borderRadius: 8, padding: '2px 14px', color: 'rgba(255,255,255,.45)',
+    fontSize: 12, fontWeight: 500, cursor: 'pointer', marginBottom: 8,
     fontFamily: "'DM Sans', sans-serif", transition: 'all .2s',
   },
   eyebrow: { fontSize: 11, fontWeight: 700, color: '#10b981', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
