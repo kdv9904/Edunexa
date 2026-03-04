@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FaArrowLeftLong, FaLock, FaStar } from "react-icons/fa6";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedCourse } from "../redux/courseSlice";
 import img from "../assets/empty.jpg";
-import { FaPlayCircle } from "react-icons/fa";
+import { FaPlayCircle, FaCheckCircle } from "react-icons/fa";
 import { serverUrl } from "../App";
 import axios from "axios";
 import Card from "../component/Card";
@@ -15,763 +15,621 @@ const ViewCourse = () => {
   const { courseId } = useParams();
   const dispatch = useDispatch();
   const { userData } = useSelector(state => state.user);
+  const { creatorCourseData, selectedCourse } = useSelector(state => state.course);
+
   const [selectedLecture, setSelectedLecture] = useState(null);
-  const [creatorData, setCreatorData] = useState(null);
-  const [creatorCourses, setCreatorCourses] = useState([]);
-  const [isEnrolled, setIsEnrolled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [rating,setRating] = useState(0);
-  const [comment,setComment] = useState("");
-  const [reviewsData, setReviewsData] = useState([]);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [creatorData, setCreatorData]         = useState(null);
+  const [creatorCourses, setCreatorCourses]   = useState([]);
+  const [isEnrolled, setIsEnrolled]           = useState(false);
+  const [loading, setLoading]                 = useState(true);
+  const [rating, setRating]                   = useState(0);
+  const [comment, setComment]                 = useState("");
+  const [reviewsData, setReviewsData]         = useState([]);
+  const [reviewsLoading, setReviewsLoading]   = useState(true);
 
-  const { creatorCourseData, selectedCourse } = useSelector(
-    (state) => state.course
-  );
+  // ── Video completion tracking ──
+  const [watchedLectures, setWatchedLectures] = useState(() => {
+    try {
+      const stored = localStorage.getItem(`watched_${courseId}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+  const videoRef = useRef(null);
+  const watchedRef = useRef(watchedLectures);
 
-  // ✅ Reset state when courseId changes
+  const markAsWatched = (lectureId) => {
+    if (watchedRef.current[lectureId]) return;
+    const updated = { ...watchedRef.current, [lectureId]: true };
+    watchedRef.current = updated;
+    setWatchedLectures(updated);
+    localStorage.setItem(`watched_${courseId}`, JSON.stringify(updated));
+  };
+
+  const handleVideoTimeUpdate = () => {
+    const vid = videoRef.current;
+    if (!vid || !selectedLecture) return;
+    if (vid.duration > 0 && vid.currentTime / vid.duration >= 0.9) {
+      markAsWatched(selectedLecture._id);
+    }
+  };
+
+  const completedCount = Object.keys(watchedLectures).filter(k => watchedLectures[k]).length;
+  const totalLectures  = selectedCourse?.lectures?.length || 0;
+  const progressPct    = totalLectures > 0 ? Math.round((completedCount / totalLectures) * 100) : 0;
+
+  // ── Reset on courseId change ──
   useEffect(() => {
     setSelectedLecture(null);
     dispatch(setSelectedCourse(null));
     setIsEnrolled(false);
     setLoading(true);
+    const stored = localStorage.getItem(`watched_${courseId}`);
+    const parsed = stored ? JSON.parse(stored) : {};
+    setWatchedLectures(parsed);
+    watchedRef.current = parsed;
   }, [courseId, dispatch]);
 
-  // ✅ Check enrollment status
-  useEffect(() => {
-    checkEnrollment();
-  }, [userData, courseId, selectedCourse]);
+  // ── Check enrollment ──
+  useEffect(() => { checkEnrollment(); }, [userData, courseId, selectedCourse]);
 
   const checkEnrollment = async () => {
-    const localCheck = userData?.enrolledCourse?.some(c => 
-      (typeof c === 'string' ? c : c._id).toString() === courseId?.toString()
+    const local = userData?.enrolledCourse?.some(c =>
+      (typeof c === "string" ? c : c._id).toString() === courseId?.toString()
     );
-    
-    if (localCheck) {
-      setIsEnrolled(true);
-      return;
-    }
-
+    if (local) { setIsEnrolled(true); return; }
     if (userData?.user?._id && courseId) {
       try {
-        const verifyRes = await axios.post(
-          `${serverUrl}/api/payment/check-enrollment`,
-          { userId: userData.user._id, courseId },
-          { withCredentials: true }
-        );
-        
-        if (verifyRes.data.success && verifyRes.data.isEnrolled) {
-          setIsEnrolled(true);
-        }
-      } catch (error) {
-        console.log("❌ Error checking enrollment:", error);
-        const fallbackCheck = userData?.enrolledCourse?.some(c => 
-          (typeof c === 'string' ? c : c._id).toString() === courseId?.toString()
-        );
-        setIsEnrolled(fallbackCheck || false);
-      }
+        const res = await axios.post(`${serverUrl}/api/payment/check-enrollment`, { userId: userData.user._id, courseId }, { withCredentials: true });
+        if (res.data.success && res.data.isEnrolled) setIsEnrolled(true);
+      } catch { setIsEnrolled(false); }
     }
   };
 
-  // ✅ Fetch course with lectures
+  // ── Fetch course ──
   useEffect(() => {
-    const fetchCourseWithLectures = async () => {
+    const fetch = async () => {
       try {
         setLoading(true);
-        
-        const freshCourse = await axios.get(
-          `${serverUrl}/api/course/getcourse/${courseId}`,
-          { withCredentials: true }
-        );
-        
-        const course = freshCourse.data;
-        
-        if (course) {
-          let detailedLectures = [];
-          
-          if (course.lectures && course.lectures.length > 0) {
-            if (typeof course.lectures[0] === 'object' && course.lectures[0].lectureTitle) {
-              detailedLectures = course.lectures.map(lec => ({
-                _id: lec._id,
-                lectureTitle: lec.lectureTitle || "Untitled Lecture",
-                videoUrl: lec.videoUrl || "",
-                isPreviewFree: lec.isPreviewFree || false,
-              }));
-            } else {
-              for (const lectureId of course.lectures) {
-                try {
-                  const lectureRes = await axios.get(
-                    `${serverUrl}/api/course/courselecture/${courseId}`,
-                    { withCredentials: true }
-                  );
-                  
-                  if (lectureRes.data.lectures && lectureRes.data.lectures.length > 0) {
-                    detailedLectures = lectureRes.data.lectures.map(lec => ({
-                      _id: lec._id,
-                      lectureTitle: lec.lectureTitle || "Untitled Lecture",
-                      videoUrl: lec.videoUrl || "",
-                      isPreviewFree: lec.isPreviewFree || false,
-                    }));
-                  }
-                  break;
-                } catch (error) {
-                  console.log("❌ Error fetching lecture details:", error);
-                }
-              }
-            }
-          }
-
-          dispatch(setSelectedCourse({ ...course, lectures: detailedLectures }));
-          
-          if (detailedLectures.length > 0) {
-            const firstAccessibleLecture = detailedLectures.find(lec => 
-              lec.isPreviewFree || isEnrolled
-            ) || detailedLectures[0];
-            setSelectedLecture(firstAccessibleLecture);
+        const res  = await axios.get(`${serverUrl}/api/course/getcourse/${courseId}`, { withCredentials: true });
+        const course = res.data;
+        let lectures = [];
+        if (course?.lectures?.length > 0) {
+          if (typeof course.lectures[0] === "object" && course.lectures[0].lectureTitle) {
+            lectures = course.lectures;
+          } else {
+            const lr = await axios.get(`${serverUrl}/api/course/courselecture/${courseId}`, { withCredentials: true });
+            lectures = lr.data.lectures || [];
           }
         }
-      } catch (error) {
-        console.log("❌ Error fetching course:", error);
-        toast.error("Failed to load course details");
-      } finally {
-        setLoading(false);
-      }
+        dispatch(setSelectedCourse({ ...course, lectures }));
+        if (lectures.length > 0) {
+          const first = lectures.find(l => l.isPreviewFree || isEnrolled) || lectures[0];
+          setSelectedLecture(first);
+        }
+      } catch { toast.error("Failed to load course details"); }
+      finally { setLoading(false); }
     };
-
-    if (courseId) {
-      fetchCourseWithLectures();
-    }
+    if (courseId) fetch();
   }, [courseId, dispatch, isEnrolled]);
 
-  // ✅ Handle lecture selection
-  const handleLectureSelect = (lecture) => {
-    if (lecture.isPreviewFree || isEnrolled) {
-      setSelectedLecture(lecture);
-      
-      if (!lecture.videoUrl) {
-        if (lecture.isPreviewFree) {
-          toast.info("Preview video not available for this lecture");
-        } else {
-          toast.info("Video content will be available soon");
-        }
-      }
-    } else {
-      toast.info("Please enroll in the course to access this lecture");
-    }
-  };
-
-  // ✅ Fetch creator info
+  // ── Creator ──
   useEffect(() => {
-    const handleCreator = async () => {
-      const creatorId = selectedCourse?.creator?._id || selectedCourse?.creator;
-      if (!creatorId) return;
-
+    const fetchCreator = async () => {
+      const id = selectedCourse?.creator?._id || selectedCourse?.creator;
+      if (!id) return;
       try {
-        const res = await axios.post(
-          `${serverUrl}/api/course/creator`,
-          { userId: creatorId },
-          { withCredentials: true }
-        );
+        const res = await axios.post(`${serverUrl}/api/course/creator`, { userId: id }, { withCredentials: true });
         setCreatorData(res.data);
-      } catch (error) {
-        console.log("❌ Error fetching creator:", error);
-      }
+      } catch {}
     };
-
-    if (selectedCourse) {
-      handleCreator();
-    }
+    if (selectedCourse) fetchCreator();
   }, [selectedCourse]);
 
-  // ✅ Fetch other courses by the same creator
   useEffect(() => {
     if (creatorData?._id && creatorCourseData?.length > 0) {
-      const otherCourses = creatorCourseData.filter(
-        (course) => course.creator === creatorData._id && course._id !== courseId
-      );
-      setCreatorCourses(otherCourses);
+      setCreatorCourses(creatorCourseData.filter(c => c.creator === creatorData._id && c._id !== courseId));
     }
   }, [creatorData, creatorCourseData, courseId]);
-   
-  const handleEnroll = async () => {
-    const userId = userData?.user?._id;
-    const currentCourseId = courseId;
 
-    if (!userData?.user || !userId) {
-      toast.error("Please log in to enroll in courses");
-      navigate("/login");
-      return;
-    }
+  // ── Reviews ──
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!selectedCourse?.reviews?.length) { setReviewsData([]); setReviewsLoading(false); return; }
+      try {
+        setReviewsLoading(true);
+        if (typeof selectedCourse.reviews[0] === "object" && selectedCourse.reviews[0].rating !== undefined) {
+          setReviewsData(selectedCourse.reviews);
+        } else {
+          const all = await Promise.all(
+            selectedCourse.reviews.map(async id => {
+              try { const r = await axios.get(`${serverUrl}/api/review/${id}`, { withCredentials: true }); return r.data.review; }
+              catch { return null; }
+            })
+          );
+          setReviewsData(all.filter(Boolean));
+        }
+      } catch { setReviewsData([]); }
+      finally { setReviewsLoading(false); }
+    };
+    if (selectedCourse) fetchReviews();
+  }, [selectedCourse]);
 
-    if (isEnrolled) {
-      navigate(`/learn/${courseId}`);
-      return;
-    }
+  const avgRating = (() => {
+    const list = reviewsData.length > 0 ? reviewsData : (selectedCourse?.reviews || []);
+    const valid = list.filter(r => r && typeof r.rating === "number" && !isNaN(r.rating));
+    if (!valid.length) return 0;
+    return Number((valid.reduce((s, r) => s + r.rating, 0) / valid.length).toFixed(1));
+  })();
 
-    try {
-      const orderData = await axios.post(
-        serverUrl + "/api/payment/razorpay-order", 
-        { userId, courseId: currentCourseId }, 
-        { withCredentials: true }
-      );
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: orderData.data.order.amount,
-        currency: "INR",
-        name: "AILMS",
-        description: "Course Enrollment Payment",
-        order_id: orderData.data.order.id,
-        handler: async function (response) {
-          try {
-            const verifyPayment = await axios.post(
-              serverUrl + "/api/payment/verify-payment", 
-              { 
-                ...response,
-                courseId: currentCourseId, 
-                userId: userId 
-              }, 
-              { withCredentials: true }
-            );
-            if (verifyPayment.data.success) {
-              setIsEnrolled(true);
-              toast.success("Enrollment successful! Redirecting...");
-              
-              setTimeout(() => {
-                window.location.reload();
-              }, 1500);
-              
-            } else {
-              toast.error(verifyPayment.data.message || "Payment verification failed");
-            }
-          } catch (error) {
-            toast.error("Payment verification failed. Please contact support.");
-            console.log("❌ Error in payment verification:", error);
-          }
-        },
-        prefill: {
-          name: userData?.user?.name || "",
-          email: userData?.user?.email || "",
-        },
-        theme: {
-          color: "#000000",
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-
-      razorpay.on('payment.failed', function (response) {
-        toast.error(`Payment failed: ${response.error.description}`);
-      });
-
-    } catch (error) {
-      console.log("❌ Error in RazorpayOrder:", error);
-      toast.error("Failed to create payment order");
-    }
+  const handleLectureSelect = (lec) => {
+    if (lec.isPreviewFree || isEnrolled) setSelectedLecture(lec);
+    else toast.info("Please enroll to access this lecture");
   };
 
-  const handleWatchNow = () => {
-    if (isEnrolled) {
-      navigate(`/viewlecture/${courseId}`);
-    }
+  const handleEnroll = async () => {
+    if (!userData?.user) { toast.error("Please log in to enroll"); navigate("/login"); return; }
+    if (isEnrolled) { navigate(`/learn/${courseId}`); return; }
+    try {
+      const order = await axios.post(serverUrl + "/api/payment/razorpay-order", { userId: userData.user._id, courseId }, { withCredentials: true });
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.data.order.amount, currency: "INR",
+        name: "EduNexa", description: "Course Enrollment",
+        order_id: order.data.order.id,
+        handler: async (response) => {
+          try {
+            const verify = await axios.post(serverUrl + "/api/payment/verify-payment", { ...response, courseId, userId: userData.user._id }, { withCredentials: true });
+            if (verify.data.success) { setIsEnrolled(true); toast.success("Enrolled! Redirecting..."); setTimeout(() => window.location.reload(), 1500); }
+            else toast.error("Payment verification failed");
+          } catch { toast.error("Payment verification failed"); }
+        },
+        prefill: { name: userData.user.name || "", email: userData.user.email || "" },
+        theme: { color: "#10b981" },
+      };
+      const rz = new window.Razorpay(options);
+      rz.open();
+      rz.on("payment.failed", r => toast.error(`Payment failed: ${r.error.description}`));
+    } catch { toast.error("Failed to create payment order"); }
   };
 
   const handleSubmitReview = async () => {
-    if (!rating || !comment.trim()) {
-      toast.error("Please provide both rating and comment");
-      return;
-    }
-
-    if (!userData?.user?._id) {
-      toast.error("Please login to submit review");
-      navigate("/login");
-      return;
-    }
-
+    if (!rating || !comment.trim()) { toast.error("Please provide rating and comment"); return; }
+    if (!userData?.user?._id) { toast.error("Please login"); navigate("/login"); return; }
     try {
-      const response = await axios.post(
-        `${serverUrl}/api/review/createreview`,
-        {
-          rating,
-          comment,
-          courseId
-        },
-        { withCredentials: true }
-      );
-
-      if (response.data.message === "Review created successfully") {
-        toast.success("Review submitted successfully!");
-        setRating(0);
-        setComment("");
-      }
-    } catch (error) {
-      if (error.response?.data?.message === "Review already given by you") {
-        toast.error("You have already reviewed this course");
-      } else {
-        toast.error("Failed to submit review");
-      }
-      console.log("❌ Error submitting review:", error);
+      await axios.post(`${serverUrl}/api/review/createreview`, { rating, comment, courseId }, { withCredentials: true });
+      toast.success("Review submitted!"); setRating(0); setComment("");
+    } catch (e) {
+      toast.error(e.response?.data?.message === "Review already given by you" ? "You've already reviewed this course" : "Failed to submit review");
     }
   };
 
-  useEffect(() => {
-    const fetchReviewDetails = async () => {
-      if (selectedCourse?.reviews && selectedCourse.reviews.length > 0) {
-        try {
-          setReviewsLoading(true);
-          
-          if (typeof selectedCourse.reviews[0] === 'object' && selectedCourse.reviews[0].rating !== undefined) {
-            setReviewsData(selectedCourse.reviews);
-          } else {
-            const reviewDetails = [];
-            
-            for (const reviewId of selectedCourse.reviews) {
-              try {
-                const reviewRes = await axios.get(
-                  `${serverUrl}/api/review/${reviewId}`,
-                  { withCredentials: true }
-                );
-                if (reviewRes.data.review) {
-                  reviewDetails.push(reviewRes.data.review);
-                }
-              } catch (error) {
-                console.log(`❌ Error fetching review ${reviewId}:`, error);
-              }
-            }
-            
-            setReviewsData(reviewDetails);
-          }
-        } catch (error) {
-          console.log("❌ Error fetching review details:", error);
-          setReviewsData([]);
-        } finally {
-          setReviewsLoading(false);
-        }
-      } else {
-        setReviewsData([]);
-        setReviewsLoading(false);
-      }
-    };
+  // ── Loading / Not found ──
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: "#07090f", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 14, fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(16,185,129,.2)", borderTopColor: "#10b981", animation: "spin .8s linear infinite" }} />
+      <p style={{ color: "rgba(255,255,255,.35)", fontSize: 13 }}>Loading course...</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
-    if (selectedCourse) {
-      fetchReviewDetails();
-    }
-  }, [selectedCourse]);
-
-  const calculateAvgReview = (reviews) => {
-    const reviewsToCalculate = reviewsData.length > 0 ? reviewsData : reviews;
-    
-    if (!reviewsToCalculate || !Array.isArray(reviewsToCalculate) || reviewsToCalculate.length === 0) {
-      return 0;
-    }
-    
-    const validReviews = reviewsToCalculate.filter(review => 
-      review && 
-      typeof review === 'object' && 
-      typeof review.rating === 'number' && 
-      !isNaN(review.rating)
-    );
-    
-    if (validReviews.length === 0) return 0;
-    
-    const total = validReviews.reduce((sum, review) => sum + review.rating, 0);
-    const avg = total / validReviews.length;
-    
-    return isNaN(avg) ? 0 : Number(avg.toFixed(1));
-  }
-
-  const avgRatings = calculateAvgReview(selectedCourse?.reviews);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading course details...</p>
-        </div>
+  if (!selectedCourse) return (
+    <div style={{ minHeight: "100vh", background: "#07090f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 48, marginBottom: 16, opacity: .3 }}>📚</div>
+        <h3 style={{ color: "#fff", fontSize: 20, marginBottom: 8 }}>Course Not Found</h3>
+        <button onClick={() => navigate("/")} style={{ marginTop: 16, padding: "10px 24px", background: "#10b981", border: "none", borderRadius: 10, color: "#07090f", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Browse Courses</button>
       </div>
-    );
-  }
-        
-  if (!selectedCourse) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-            <span className="text-3xl text-gray-400">📚</span>
-          </div>
-          <h3 className="text-2xl font-semibold text-gray-600 mb-4">Course Not Found</h3>
-          <p className="text-gray-500 mb-6 max-w-md">The course you're looking for doesn't exist or has been removed.</p>
-          <button 
-            onClick={() => navigate("/")}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105"
-          >
-            Browse Courses
-          </button>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10 p-6">
-      {/* Back Button */}
-      <div className="max-w-6xl mx-auto mb-6">
-        <button 
-          onClick={() => navigate("/")}
-          className="group flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 hover:border-blue-300"
-        >
-          <FaArrowLeftLong className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors"/>
-          <span className="text-gray-700 font-medium group-hover:text-blue-600 transition-colors">Back to Home</span>
-        </button>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-      <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-        {/* ===== Top Section ===== */}
-        <div className="flex flex-col md:flex-row gap-8 p-8">
-          <div className="w-full md:w-1/2 space-y-4">
-            <div className="relative rounded-2xl overflow-hidden shadow-lg">
-              <img
-                src={selectedCourse.thumbnail || img}
-                alt="Course Thumbnail"
-                className="rounded-2xl w-full h-80 object-cover transform hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute top-4 left-4">
-                <span className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-sm font-semibold text-gray-800 shadow-lg">
-                  {selectedCourse.category}
-                </span>
-              </div>
-            </div>
-          </div>
+        .vc-root { min-height: 100vh; background: #07090f; font-family: 'DM Sans', sans-serif; position: relative; overflow-x: hidden; padding: 40px 24px 80px; }
+        .vc-glow1 { position: fixed; width: 700px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.055) 0%, transparent 70%); top: -200px; right: -200px; pointer-events: none; z-index: 0; }
+        .vc-glow2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.05) 0%, transparent 70%); bottom: -100px; left: -100px; pointer-events: none; z-index: 0; }
+        .vc-grid { position: fixed; inset: 0; opacity: .02; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px); background-size: 56px 56px; }
+        .vc-inner { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
 
-          <div className="flex flex-col w-full md:w-1/2 space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                {selectedCourse.title || "Untitled Course"}
-              </h2>
-              <p className="text-gray-600 text-lg mt-2">{selectedCourse.subTitle}</p>
-            </div>
+        /* Back */
+        .vc-back { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500; cursor: pointer; margin-bottom: 28px; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .vc-back:hover { color: #fff; background: rgba(255,255,255,.09); }
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent font-semibold">
-                <FaStar className="text-amber-400 text-xl" />
-                <span className="text-lg">{avgRatings}</span>
-                <span className="text-gray-500 text-sm">({reviewsData.length} reviews)</span>
-              </div>
-            </div>
+        /* Hero row */
+        .vc-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 20px; }
+        @media(max-width:760px){ .vc-hero { grid-template-columns: 1fr; } }
 
-            <div className="flex items-center gap-4">
-              <span className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                ₹{selectedCourse.price || "0"}
-              </span>
-              <span className="text-xl text-gray-400 line-through">
-                ₹{Math.round((selectedCourse.price || 0) * 1.5)}
-              </span>
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
-                Save {Math.round(((selectedCourse.price * 1.5 - selectedCourse.price) / (selectedCourse.price * 1.5)) * 100)}%
-              </span>
-            </div>
+        .vc-thumb-wrap { border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); position: relative; }
+        .vc-thumb-wrap img { width: 100%; height: 280px; object-fit: cover; display: block; }
+        .vc-cat-badge { position: absolute; top: 12px; left: 12px; background: rgba(7,9,15,.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.12); padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; }
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                </div>
-                <span>Lifetime access to course materials</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                </div>
-                <span>{selectedCourse.lectures?.length || 0} comprehensive lectures</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                </div>
-                <span>Certificate of completion</span>
-              </div>
-            </div>
+        .vc-info { display: flex; flex-direction: column; gap: 16px; }
+        .vc-eyebrow { font-size: 11px; font-weight: 700; color: #10b981; letter-spacing: 2px; text-transform: uppercase; }
+        .vc-course-title { font-family: 'Playfair Display', serif; font-size: clamp(22px, 2.5vw, 30px); font-weight: 700; color: #fff; line-height: 1.25; margin: 0; }
+        .vc-subtitle { font-size: 14px; color: rgba(255,255,255,.45); margin: 0; line-height: 1.6; }
 
-            {isEnrolled ? (
-              <button 
-                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3 mt-4"
-                onClick={handleWatchNow}
-              >
-                <FaPlayCircle className="text-xl" />
-                Continue Learning
-              </button>
-            ) : (
-              <button 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 mt-4"
-                onClick={handleEnroll}
-              >
-                Enroll Now - ₹{selectedCourse.price}
-              </button>
-            )}
-          </div>
-        </div>
+        .vc-rating-row { display: flex; align-items: center; gap: 8px; }
+        .vc-stars { display: flex; gap: 3px; }
+        .vc-star { color: #f59e0b; font-size: 13px; }
+        .vc-star-empty { color: rgba(255,255,255,.15); font-size: 13px; }
+        .vc-rating-num { font-size: 14px; font-weight: 700; color: #f59e0b; }
+        .vc-review-count { font-size: 12px; color: rgba(255,255,255,.35); }
 
-        {/* ===== Description Sections ===== */}
-        <div className="px-8 pb-8 space-y-6">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
-            <h2 className="text-xl font-semibold mb-3 text-gray-800">What you will learn</h2>
-            <ul className="text-gray-700 space-y-2">
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Master {selectedCourse.category} from beginning to advanced level
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Build real-world projects and applications
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                Learn industry best practices and standards
-              </li>
-            </ul>
-          </div>
+        .vc-price-row { display: flex; align-items: center; gap: 12px; }
+        .vc-price { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #fff; }
+        .vc-price-old { font-size: 16px; color: rgba(255,255,255,.25); text-decoration: line-through; }
+        .vc-save-badge { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.2); color: #10b981; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 100px; }
 
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
-            <h2 className="text-xl font-semibold mb-3 text-gray-800">This Course is For</h2>
-            <p className="text-gray-700">
-              Beginners, aspiring Developers, and Professionals looking to upgrade their skills in {selectedCourse.category}.
-            </p>
-          </div>
-        </div>
+        .vc-features { display: flex; flex-direction: column; gap: 8px; }
+        .vc-feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,.5); }
+        .vc-feature-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
-        {/* ===== Curriculum Section ===== */}
-        <div className="flex flex-col lg:flex-row gap-8 p-8 bg-gray-50">
-          <div className="bg-white w-full lg:w-2/5 p-6 rounded-2xl shadow-lg border border-gray-200">
-            <h2 className="text-xl font-bold mb-3 text-gray-800">
-              Course Curriculum
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              {selectedCourse.lectures?.length || 0} Lecture(s)
-              {selectedCourse.lectures?.some(lec => lec.isPreviewFree) && 
-                ` • ${selectedCourse.lectures.filter(lec => lec.isPreviewFree).length} Preview(s)`
-              }
-            </p>
+        .vc-enroll-btn { width: 100%; padding: 14px; border-radius: 12px; background: #10b981; border: none; color: #07090f; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s, transform .15s, box-shadow .2s; }
+        .vc-enroll-btn:hover { background: #0ea472; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(16,185,129,.3); }
+        .vc-continue-btn { width: 100%; padding: 14px; border-radius: 12px; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25); color: #10b981; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .vc-continue-btn:hover { background: rgba(16,185,129,.2); }
 
-            <div className="flex flex-col gap-3 max-h-96 overflow-y-auto">
-              {selectedCourse.lectures?.length > 0 ? (
-                selectedCourse.lectures.map((lecture, index) => (
-                  <button
-                    key={lecture._id}
-                    onClick={() => handleLectureSelect(lecture)}
-                    className={`flex items-center gap-4 px-4 py-4 rounded-xl border-2 transition-all duration-300 text-left group ${
-                      lecture.isPreviewFree || isEnrolled
-                        ? "hover:shadow-lg cursor-pointer border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                        : "cursor-not-allowed opacity-60 border-gray-100"
-                    } ${
-                      selectedLecture?._id === lecture._id
-                        ? "bg-blue-50 border-blue-300 shadow-md"
-                        : "bg-white"
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      lecture.isPreviewFree || isEnrolled
-                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                        : "bg-gray-200 text-gray-400"
-                    }`}>
-                      {lecture.isPreviewFree || isEnrolled ? (
-                        <FaPlayCircle className="text-sm" />
-                      ) : (
-                        <FaLock className="text-sm" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-sm font-medium text-gray-800 block text-left">
-                        {index + 1}. {lecture.lectureTitle || "Untitled Lecture"}
-                      </span>
-                    </div>
-                    {lecture.isPreviewFree && !isEnrolled && (
-                      <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold whitespace-nowrap">
-                        Preview
-                      </span>
-                    )}
-                  </button>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <FaPlayCircle className="text-gray-400 text-xl" />
-                  </div>
-                  <p className="text-gray-500">No lectures available yet</p>
-                </div>
-              )}
-            </div>
-          </div>
+        /* Progress bar */
+        .vc-progress-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
+        .vc-progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .vc-progress-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .8px; }
+        .vc-progress-pct { font-size: 13px; font-weight: 700; color: #10b981; }
+        .vc-progress-track { height: 5px; background: rgba(255,255,255,.07); border-radius: 100px; overflow: hidden; }
+        .vc-progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 100px; transition: width .4s ease; }
+        .vc-progress-sub { font-size: 11px; color: rgba(255,255,255,.25); margin-top: 8px; }
 
-          <div className="bg-white w-full lg:w-3/5 p-6 rounded-2xl shadow-lg border border-gray-200">
-            <div className="aspect-video w-full rounded-xl overflow-hidden mb-6 bg-black flex items-center justify-center shadow-lg">
-              {selectedLecture?.videoUrl ? (
-                <video
-                  className="w-full h-full object-cover"
-                  src={selectedLecture.videoUrl}
-                  controls
-                  autoPlay={false}
-                >
-                  Your browser does not support the video tag.
-                </video>
-              ) : selectedLecture ? (
-                <div className="text-white text-center p-8">
-                  <FaPlayCircle className="text-6xl mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">
-                    {selectedLecture.isPreviewFree 
-                      ? "Preview Coming Soon" 
-                      : isEnrolled 
-                        ? "Video Content in Progress" 
-                        : "Enroll to Access"
-                    }
-                  </p>
-                  <p className="text-sm opacity-75">
-                    {selectedLecture.isPreviewFree 
-                      ? "Free preview will be available shortly" 
-                      : "Full video content is being prepared"
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="text-white text-center p-8">
-                  <FaPlayCircle className="text-6xl mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">Select a Lecture</p>
-                  <p className="text-sm opacity-75 mt-2">Choose from the curriculum to start learning</p>
-                </div>
-              )}
+        /* Main content grid */
+        .vc-main { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; margin-bottom: 20px; }
+        @media(max-width:860px){ .vc-main { grid-template-columns: 1fr; } }
+
+        /* Curriculum card */
+        .vc-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 22px; }
+        .vc-card-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
+        .vc-card-sub { font-size: 12px; color: rgba(255,255,255,.2); margin-bottom: 16px; }
+
+        .vc-lec-list { display: flex; flex-direction: column; gap: 6px; max-height: 440px; overflow-y: auto; padding-right: 4px; }
+        .vc-lec-list::-webkit-scrollbar { width: 3px; }
+        .vc-lec-list::-webkit-scrollbar-thumb { background: rgba(16,185,129,.3); border-radius: 100px; }
+
+        .vc-lec-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.06); cursor: pointer; transition: all .18s; background: rgba(255,255,255,.02); }
+        .vc-lec-item.active { border-color: rgba(16,185,129,.3); background: rgba(16,185,129,.07); }
+        .vc-lec-item.locked { opacity: .45; cursor: not-allowed; }
+        .vc-lec-item:not(.locked):not(.active):hover { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04); }
+
+        .vc-lec-num { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .vc-lec-num-default { background: rgba(255,255,255,.06); color: rgba(255,255,255,.35); }
+        .vc-lec-num-active { background: rgba(16,185,129,.15); color: #10b981; }
+        .vc-lec-num-locked { background: rgba(255,255,255,.04); color: rgba(255,255,255,.2); }
+
+        .vc-lec-name { flex: 1; font-size: 12px; font-weight: 500; color: rgba(255,255,255,.65); line-height: 1.4; }
+        .vc-lec-name.active { color: #fff; font-weight: 600; }
+
+        /* Watched tick */
+        .vc-lec-tick { width: 20px; height: 20px; border-radius: 50%; background: rgba(16,185,129,.15); border: 1.5px solid rgba(16,185,129,.4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; animation: tickPop .3s ease; }
+        @keyframes tickPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .vc-free-pill { font-size: 9px; font-weight: 700; color: #10b981; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); padding: 2px 7px; border-radius: 100px; flex-shrink: 0; }
+
+        /* Video card */
+        .vc-video-wrap { aspect-ratio: 16/9; border-radius: 14px; overflow: hidden; background: #000; margin-bottom: 16px; position: relative; }
+        .vc-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+        .vc-video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+        .vc-lec-info-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .vc-lec-info-sub { font-size: 12px; color: rgba(255,255,255,.35); }
+
+        /* Review section */
+        .vc-divider { height: 1px; background: rgba(255,255,255,.06); margin: 20px 0; }
+        .vc-review-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+        .vc-star-input { font-size: 22px; cursor: pointer; transition: transform .1s; color: rgba(255,255,255,.15); }
+        .vc-star-input.active { color: #f59e0b; }
+        .vc-star-input:hover { transform: scale(1.2); }
+        .vc-review-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; }
+        .vc-textarea { width: 100%; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); color: #fff; font-size: 13px; font-family: 'DM Sans', sans-serif; resize: none; outline: none; transition: border-color .2s; box-sizing: border-box; height: 90px; line-height: 1.6; }
+        .vc-textarea:focus { border-color: #10b981; }
+        .vc-textarea::placeholder { color: rgba(255,255,255,.2); }
+        .vc-submit-btn { padding: 10px 22px; border-radius: 10px; background: #10b981; border: none; color: #07090f; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s; }
+        .vc-submit-btn:hover:not(:disabled) { background: #0ea472; }
+        .vc-submit-btn:disabled { background: rgba(255,255,255,.08); color: rgba(255,255,255,.25); cursor: not-allowed; }
+
+        /* Info panels */
+        .vc-two-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        @media(max-width:640px){ .vc-two-panels { grid-template-columns: 1fr; } }
+        .vc-info-panel { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 20px; }
+        .vc-info-panel-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.6); margin-bottom: 12px; }
+        .vc-info-list { display: flex; flex-direction: column; gap: 8px; }
+        .vc-info-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(255,255,255,.45); }
+        .vc-info-bullet { width: 5px; height: 5px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
+
+        /* Creator */
+        .vc-creator-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 18px; padding: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .vc-creator-avatar { width: 54px; height: 54px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); flex-shrink: 0; }
+        .vc-creator-avatar-placeholder { width: 54px; height: 54px; border-radius: 12px; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.2); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #10b981; flex-shrink: 0; }
+        .vc-creator-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+        .vc-creator-desc { font-size: 12px; color: rgba(255,255,255,.35); line-height: 1.5; }
+
+        /* More courses */
+        .vc-section-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+        .vc-section-title em { color: #10b981; font-style: italic; }
+        .vc-courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+      `}</style>
+
+      <div className="vc-root">
+        <div className="vc-glow1" /><div className="vc-glow2" /><div className="vc-grid" />
+
+        <div className="vc-inner">
+
+          {/* Back */}
+          <button className="vc-back" onClick={() => navigate("/")}>
+            <FaArrowLeftLong size={11} /> Back to Home
+          </button>
+
+          {/* Hero */}
+          <div className="vc-hero">
+            <div className="vc-thumb-wrap">
+              <img src={selectedCourse.thumbnail || img} alt={selectedCourse.title} />
+              <div className="vc-cat-badge">{selectedCourse.category}</div>
             </div>
 
-            {/* Lecture Info */}
-            {selectedLecture && (
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  {selectedLecture.lectureTitle}
-                </h3>
-                {selectedLecture.isPreviewFree && !isEnrolled && (
-                  <p className="text-green-600 font-medium text-sm">
-                    ⭐ Free Preview - Enroll to access all lectures
-                  </p>
-                )}
-                {!selectedLecture.videoUrl && (
-                  <p className="text-yellow-600 text-sm">
-                    ⚠️ Video content is being prepared
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* ===== Review Section ===== */}
-            <div className="border-t pt-6">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Share Your Experience</h2>
-              
-              {/* Rating Stars */}
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-gray-700 font-medium">Rate this course:</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setRating(star)}
-                      className={`text-2xl transition-transform hover:scale-110 ${
-                        rating >= star ? "text-yellow-500" : "text-gray-300"
-                      }`}
-                    >
-                      <FaStar />
-                    </button>
+            <div className="vc-info">
+              <div className="vc-eyebrow">{selectedCourse.level || "Course"}</div>
+              <h1 className="vc-course-title">{selectedCourse.title}</h1>
+              {selectedCourse.subTitle && <p className="vc-subtitle">{selectedCourse.subTitle}</p>}
+
+              {/* Rating */}
+              <div className="vc-rating-row">
+                <div className="vc-stars">
+                  {[1,2,3,4,5].map(s => (
+                    <FaStar key={s} className={s <= Math.round(avgRating) ? "vc-star" : "vc-star-empty"} />
                   ))}
                 </div>
-                {rating > 0 && (
-                  <span className="text-sm text-gray-600 ml-2">
-                    ({rating} {rating === 1 ? 'star' : 'stars'})
-                  </span>
+                <span className="vc-rating-num">{avgRating || "—"}</span>
+                <span className="vc-review-count">({reviewsData.length} reviews)</span>
+              </div>
+
+              {/* Price */}
+              {selectedCourse.price ? (
+                <div className="vc-price-row">
+                  <span className="vc-price">₹{selectedCourse.price}</span>
+                  <span className="vc-price-old">₹{Math.round(selectedCourse.price * 1.5)}</span>
+                  <span className="vc-save-badge">33% off</span>
+                </div>
+              ) : (
+                <span className="vc-save-badge" style={{ width: "fit-content" }}>Free</span>
+              )}
+
+              {/* Features */}
+              <div className="vc-features">
+                {[
+                  { color: "#10b981", text: "Lifetime access to course materials" },
+                  { color: "#6366f1", text: `${totalLectures} comprehensive lectures` },
+                  { color: "#f59e0b", text: "Certificate of completion" },
+                ].map((f, i) => (
+                  <div className="vc-feature" key={i}>
+                    <div className="vc-feature-dot" style={{ background: f.color }} />
+                    {f.text}
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              {isEnrolled ? (
+                <button className="vc-continue-btn" onClick={() => navigate(`/viewlecture/${courseId}`)}>
+                  <FaPlayCircle size={14} /> Continue Learning
+                </button>
+              ) : (
+                <button className="vc-enroll-btn" onClick={handleEnroll}>
+                  {selectedCourse.price ? `Enroll Now — ₹${selectedCourse.price}` : "Enroll for Free"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Progress bar (only if enrolled and watched any) */}
+          {isEnrolled && totalLectures > 0 && (
+            <div className="vc-progress-card">
+              <div className="vc-progress-top">
+                <span className="vc-progress-label">Your Progress</span>
+                <span className="vc-progress-pct">{progressPct}%</span>
+              </div>
+              <div className="vc-progress-track">
+                <div className="vc-progress-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+              <div className="vc-progress-sub">
+                {completedCount} of {totalLectures} lectures completed
+                {completedCount === totalLectures && totalLectures > 0 && " 🎉 Course Complete!"}
+              </div>
+            </div>
+          )}
+
+          {/* Curriculum + Video */}
+          <div className="vc-main">
+
+            {/* Curriculum */}
+            <div className="vc-card">
+              <div className="vc-card-title">Curriculum</div>
+              <div className="vc-card-sub">
+                {totalLectures} lecture{totalLectures !== 1 ? "s" : ""}
+                {totalLectures > 0 && selectedCourse.lectures?.some(l => l.isPreviewFree) &&
+                  ` • ${selectedCourse.lectures.filter(l => l.isPreviewFree).length} free preview`}
+              </div>
+
+              <div className="vc-lec-list">
+                {totalLectures > 0 ? selectedCourse.lectures.map((lec, i) => {
+                  const isActive   = selectedLecture?._id === lec._id;
+                  const accessible = lec.isPreviewFree || isEnrolled;
+                  const watched    = watchedLectures[lec._id];
+                  return (
+                    <div
+                      key={lec._id}
+                      className={`vc-lec-item${isActive ? " active" : ""}${!accessible ? " locked" : ""}`}
+                      onClick={() => handleLectureSelect(lec)}
+                    >
+                      <div className={`vc-lec-num ${isActive ? "vc-lec-num-active" : !accessible ? "vc-lec-num-locked" : "vc-lec-num-default"}`}>
+                        {!accessible ? <FaLock size={9} /> : <FaPlayCircle size={10} />}
+                      </div>
+                      <span className={`vc-lec-name${isActive ? " active" : ""}`}>
+                        {i + 1}. {lec.lectureTitle || "Untitled Lecture"}
+                      </span>
+                      {lec.isPreviewFree && !isEnrolled && <span className="vc-free-pill">Preview</span>}
+                      {watched && (
+                        <div className="vc-lec-tick" title="Completed">
+                          <FaCheckCircle size={11} color="#10b981" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                }) : (
+                  <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,.2)", fontSize: 13 }}>
+                    No lectures available yet
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Video + Review */}
+            <div className="vc-card">
+              {/* Video */}
+              <div className="vc-video-wrap">
+                {selectedLecture?.videoUrl ? (
+                  <video
+                    ref={videoRef}
+                    src={selectedLecture.videoUrl}
+                    controls
+                    autoPlay={false}
+                    onTimeUpdate={handleVideoTimeUpdate}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                ) : (
+                  <div className="vc-video-placeholder">
+                    <FaPlayCircle size={48} color="rgba(255,255,255,.15)" />
+                    <p style={{ color: "rgba(255,255,255,.35)", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                      {selectedLecture
+                        ? selectedLecture.isPreviewFree ? "Preview video coming soon" : isEnrolled ? "Video being prepared" : "Enroll to access"
+                        : "Select a lecture to preview"}
+                    </p>
+                  </div>
                 )}
               </div>
 
-              {/* Comment Textarea */}
-              <div className="mb-4">
+              {/* Lecture title */}
+              {selectedLecture && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <h3 className="vc-lec-info-title">{selectedLecture.lectureTitle}</h3>
+                    {watchedLectures[selectedLecture._id] && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(16,185,129,.1)", border: "1px solid rgba(16,185,129,.25)", padding: "3px 10px", borderRadius: 100 }}>
+                        <FaCheckCircle size={11} color="#10b981" />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", fontFamily: "'DM Sans', sans-serif" }}>Completed</span>
+                      </div>
+                    )}
+                  </div>
+                  {selectedLecture.isPreviewFree && !isEnrolled && (
+                    <p className="vc-lec-info-sub">✦ Free preview — enroll to unlock all lectures</p>
+                  )}
+                </div>
+              )}
+
+              <div className="vc-divider" />
+
+              {/* Review form */}
+              <div className="vc-review-title">Leave a <em style={{ color: "#10b981", fontStyle: "italic" }}>review</em></div>
+
+              <div style={{ marginBottom: 14 }}>
+                <div className="vc-review-label">Rating</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[1,2,3,4,5].map(s => (
+                    <FaStar
+                      key={s}
+                      className={`vc-star-input${rating >= s ? " active" : ""}`}
+                      onClick={() => setRating(s)}
+                    />
+                  ))}
+                  {rating > 0 && <span style={{ fontSize: 12, color: "rgba(255,255,255,.3)", marginLeft: 6, alignSelf: "center" }}>{rating}/5</span>}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <div className="vc-review-label">Comment</div>
                 <textarea
+                  className="vc-textarea"
+                  placeholder="Share your thoughts about this course..."
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Share your thoughts about this course... What did you like? What could be improved?"
-                  className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:border-black transition-colors"
-                  rows="4"
+                  onChange={e => setComment(e.target.value)}
                 />
               </div>
 
-              {/* Submit Button */}
               <button
+                className="vc-submit-btn"
                 onClick={handleSubmitReview}
                 disabled={!rating || !comment.trim()}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                  !rating || !comment.trim()
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105"
-                }`}
               >
                 Submit Review
               </button>
-
-              {/* Info Text */}
-              <p className="text-sm text-gray-500 mt-3">
-                Your review will help other students make better learning decisions.
-              </p>
             </div>
           </div>
-        </div>
 
-        {/* ===== Creator Info ===== */}
-        <div className="p-8 border-t border-gray-200">
-          <div className="flex items-center gap-6">
-            {creatorData?.photoUrl ? (
-              <img
-                src={creatorData.photoUrl}
-                alt={creatorData.name}
-                className="w-16 h-16 rounded-2xl object-cover shadow-lg"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-2xl shadow-lg">
-                {creatorData?.name?.charAt(0)?.toUpperCase() || "U"}
+          {/* Info panels */}
+          <div className="vc-two-panels">
+            <div className="vc-info-panel">
+              <div className="vc-info-panel-title">What you'll learn</div>
+              <div className="vc-info-list">
+                {[
+                  `Master ${selectedCourse.category} from beginner to advanced`,
+                  "Build real-world projects",
+                  "Learn industry best practices",
+                ].map((item, i) => (
+                  <div className="vc-info-item" key={i}>
+                    <div className="vc-info-bullet" />
+                    {item}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+            <div className="vc-info-panel">
+              <div className="vc-info-panel-title">This course is for</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,.45)", lineHeight: 1.7 }}>
+                Beginners, aspiring developers, and professionals looking to upgrade their skills in {selectedCourse.category}.
+              </div>
+            </div>
+          </div>
 
+          {/* Creator */}
+          {creatorData && (
+            <div className="vc-creator-card">
+              {creatorData.photoUrl ? (
+                <img src={creatorData.photoUrl} alt={creatorData.name} className="vc-creator-avatar" />
+              ) : (
+                <div className="vc-creator-avatar-placeholder">
+                  {creatorData.name?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+              )}
+              <div>
+                <div className="vc-creator-name">{creatorData.name || "Instructor"}</div>
+                {creatorData.description && <div className="vc-creator-desc">{creatorData.description}</div>}
+                {creatorData.email && <div style={{ fontSize: 11, color: "rgba(255,255,255,.2)", marginTop: 2 }}>{creatorData.email}</div>}
+              </div>
+            </div>
+          )}
+
+          {/* More courses */}
+          {creatorCourses.length > 0 && (
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">
-                {creatorData?.name || "Unknown Instructor"}
-              </h3>
-              {creatorData?.description && (
-                <p className="text-gray-600 mt-1">{creatorData.description}</p>
-              )}
-              {creatorData?.email && (
-                <p className="text-gray-500 text-sm mt-1">{creatorData.email}</p>
-              )}
+              <div className="vc-section-title">
+                More by <em>{creatorData?.name || "this instructor"}</em>
+              </div>
+              <div className="vc-courses-grid">
+                {creatorCourses.map((course, i) => (
+                  <Card key={course._id} thumbnail={course.thumbnail} id={course._id} price={course.price} title={course.title} category={course.category} index={i} />
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* ===== Other Courses by Creator ===== */}
-        {creatorCourses.length > 0 && (
-          <div className="p-8 border-t border-gray-200 bg-gray-50">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              More Courses by {creatorData?.name || "this Instructor"}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {creatorCourses.map((course, index) => (
-                <Card 
-                  key={course._id} 
-                  thumbnail={course.thumbnail} 
-                  id={course._id} 
-                  price={course.price} 
-                  title={course.title} 
-                  category={course.category}
-                  index={index}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
