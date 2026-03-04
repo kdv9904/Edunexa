@@ -1,5 +1,6 @@
 import React from 'react'
-import { FaArrowLeftLong, FaPlus, FaEdit } from 'react-icons/fa'
+import { FaPlus, FaEdit } from 'react-icons/fa'
+import { FaArrowLeftLong } from 'react-icons/fa6'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import useCreatorCourses from '../../customHooks/getCreatorCourse'
@@ -35,7 +36,6 @@ const Courses = () => {
         .co-btn-primary { padding: 10px 20px; border-radius: 10px; background: #10b981; border: none; color: #07090f; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 7px; transition: background .2s, transform .15s, box-shadow .2s; }
         .co-btn-primary:hover { background: #0ea472; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.28); }
 
-        /* Table card */
         .co-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; overflow: hidden; }
 
         /* Table */
