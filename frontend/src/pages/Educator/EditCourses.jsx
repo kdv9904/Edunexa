@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaArrowLeftLong, FaUpload } from "react-icons/fa6";
+import { FaArrowLeftLong, FaUpload, FaChevronDown, FaCheck } from "react-icons/fa6";
 import { useNavigate, useParams } from "react-router-dom";
 import img from "../../assets/empty.jpg";
 import axios from "axios";
@@ -8,50 +8,115 @@ import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { updateCreatorCourse } from "../../redux/courseSlice";
 import { ClipLoader } from "react-spinners";
-import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 
+const CATEGORIES = [
+  "App Development","Web Development","Data Science","Machine Learning",
+  "Artificial Intelligence","Cloud Computing","Cyber Security",
+  "Blockchain","Game Development","UI/UX Design",
+];
+const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+
+/* ── Reusable custom dropdown ── */
+const Dropdown = ({ value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div
+        onClick={() => setOpen((p) => !p)}
+        style={{
+          width: "100%", padding: "11px 16px", borderRadius: 10, boxSizing: "border-box",
+          background: "rgba(255,255,255,.04)",
+          border: `1px solid ${open ? "#10b981" : "rgba(255,255,255,.1)"}`,
+          color: value ? "#fff" : "rgba(255,255,255,.25)", fontSize: 14,
+          fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          transition: "border-color .2s", userSelect: "none",
+          borderBottomLeftRadius: open ? 0 : 10, borderBottomRightRadius: open ? 0 : 10,
+        }}
+      >
+        <span>{value || placeholder}</span>
+        <FaChevronDown
+          size={11}
+          style={{
+            color: open ? "#10b981" : "rgba(255,255,255,.3)",
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform .2s, color .2s", flexShrink: 0,
+          }}
+        />
+      </div>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0,
+          background: "#0d1117", border: "1px solid rgba(16,185,129,.2)", borderTop: "none",
+          borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
+          boxShadow: "0 20px 40px rgba(0,0,0,.7)", zIndex: 999,
+          maxHeight: 240, overflowY: "auto",
+        }}>
+          {options.map((opt) => (
+            <div
+              key={opt}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              style={{
+                padding: "11px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer",
+                color: value === opt ? "#10b981" : "rgba(255,255,255,.55)",
+                background: value === opt ? "rgba(16,185,129,.08)" : "transparent",
+                borderBottom: "1px solid rgba(255,255,255,.04)",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                fontFamily: "'DM Sans', sans-serif", transition: "background .12s, color .12s",
+              }}
+              onMouseEnter={(e) => { if (value !== opt) { e.currentTarget.style.background = "rgba(255,255,255,.05)"; e.currentTarget.style.color = "#fff"; }}}
+              onMouseLeave={(e) => { if (value !== opt) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,.55)"; }}}
+            >
+              <span>{opt}</span>
+              {value === opt && <FaCheck size={10} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ── Main Component ── */
 const EditCourses = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const thumb = useRef();
   const { courseId } = useParams();
 
-  const [isPublished, setIsPublished] = useState(false);
-  const [selectCourse, setSelectCourse] = useState(null);
-  const [title, setTitle] = useState("");
-  const [subTitle, setSubTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [level, setLevel] = useState("");
-  const [price, setPrice] = useState("");
+  const [isPublished, setIsPublished]     = useState(false);
+  const [selectCourse, setSelectCourse]   = useState(null);
+  const [title, setTitle]                 = useState("");
+  const [subTitle, setSubTitle]           = useState("");
+  const [description, setDescription]     = useState("");
+  const [category, setCategory]           = useState("");
+  const [level, setLevel]                 = useState("");
+  const [price, setPrice]                 = useState("");
   const [frontendImage, setFrontendImage] = useState(img);
-  const [backendImage, setBackendImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loading1, setLoading1] = useState(false);
+  const [backendImage, setBackendImage]   = useState(null);
+  const [loading, setLoading]             = useState(false);
+  const [loading1, setLoading1]           = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Handle thumbnail upload
   const handleThumbnail = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setBackendImage(file);
-      setFrontendImage(URL.createObjectURL(file));
-    }
+    if (file) { setBackendImage(file); setFrontendImage(URL.createObjectURL(file)); }
   };
 
-  // Fetch course by ID
   const getCourseById = async () => {
     try {
-      const result = await axios.get(
-        `${serverUrl}/api/course/getcourse/${courseId}`,
-        { withCredentials: true }
-      );
+      const result = await axios.get(`${serverUrl}/api/course/getcourse/${courseId}`, { withCredentials: true });
       setSelectCourse(result.data);
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) { console.log(error); }
   };
 
-  // Prefill form when course is fetched
   useEffect(() => {
     if (selectCourse) {
       setTitle(selectCourse.title || "");
@@ -65,338 +130,238 @@ const EditCourses = () => {
     }
   }, [selectCourse]);
 
-  useEffect(() => {
-    getCourseById();
-  }, []);
+  useEffect(() => { getCourseById(); }, []);
 
-  // Save / Edit course
   const handleEditCourse = async () => {
     if (!title.trim() || !category.trim() || !level.trim()) {
-      toast.error("Please fill in all required fields");
-      return;
+      toast.error("Please fill in all required fields"); return;
     }
-
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("title", title);
-      formData.append("subTitle", subTitle);
-      formData.append("description", description);
-      formData.append("category", category);
-      formData.append("level", level);
-      formData.append("price", price);
+      formData.append("title", title); formData.append("subTitle", subTitle);
+      formData.append("description", description); formData.append("category", category);
+      formData.append("level", level); formData.append("price", price);
       formData.append("isPublished", isPublished);
       if (backendImage) formData.append("thumbnail", backendImage);
-
-      const { data } = await axios.post(
-        `${serverUrl}/api/course/editcourse/${courseId}`,
-        formData,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
+      const { data } = await axios.post(`${serverUrl}/api/course/editcourse/${courseId}`, formData, {
+        withCredentials: true, headers: { "Content-Type": "multipart/form-data" },
+      });
       dispatch(updateCreatorCourse(data));
-      toast.success("🎉 Course updated successfully!");
+      toast.success("Course updated successfully!");
       navigate("/courses");
     } catch (error) {
-      console.error(error);
       toast.error(error.response?.data?.message || "Update failed");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleRemoveCourse = async () => {
-    setLoading1(true);
+    setShowDeleteModal(false); setLoading1(true);
     try {
       await axios.delete(serverUrl + `/api/course/remove/${courseId}`, { withCredentials: true });
-      setLoading1(false);
       toast.success("Course removed successfully");
       navigate("/courses");
     } catch (error) {
-      console.log(error);
-      setLoading1(false);
       toast.error(error.response?.data?.message || "Remove failed");
-    }
+    } finally { setLoading1(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4 sm:p-6 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float cursor-pointer"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${15 + Math.random() * 10}s`
-            }}
-          />
-        ))}
-      </div>
+        .ec-root { min-height: 100vh; background: #07090f; font-family: 'DM Sans', sans-serif; position: relative; overflow-x: hidden; padding: 48px 28px 80px; }
+        .ec-glow1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.06) 0%, transparent 70%); top: -150px; right: -150px; pointer-events: none; z-index: 0; }
+        .ec-glow2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.05) 0%, transparent 70%); bottom: -100px; left: -100px; pointer-events: none; z-index: 0; }
+        .ec-grid { position: fixed; inset: 0; opacity: .022; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px); background-size: 56px 56px; }
+        .ec-inner { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; }
 
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate("/courses")}
-        className="absolute top-6 left-6 z-20 group cursor-pointer"
-      >
-        <div className="relative">
-          <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-2xl rotate-45 shadow-2xl transition-all duration-500 group-hover:rotate-90 group-hover:scale-110 flex items-center justify-center cursor-pointer">
-            <FaArrowLeftLong className="w-5 h-5 text-white -rotate-45 transition-transform duration-500 group-hover:-rotate-90 cursor-pointer" />
+        /* Back */
+        .ec-back { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500; cursor: pointer; margin-bottom: 28px; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .ec-back:hover { color: #fff; background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2); }
+
+        /* Top row */
+        .ec-toprow { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 14px; }
+        .ec-eyebrow { font-size: 11px; font-weight: 700; color: #10b981; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+        .ec-title { font-family: 'Playfair Display', serif; font-size: clamp(24px, 2.8vw, 32px); font-weight: 700; color: #fff; line-height: 1.2; margin: 0; }
+        .ec-title em { color: #10b981; font-style: italic; }
+        .ec-lec-btn { padding: 9px 18px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.55); font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; white-space: nowrap; display: flex; align-items: center; gap: 7px; margin-top: 4px; }
+        .ec-lec-btn:hover { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.2); }
+
+        /* Status bar */
+        .ec-status-bar { display: flex; align-items: center; gap: 10px; padding: 13px 18px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+        .ec-status-dot { font-size: 11px; color: rgba(255,255,255,.3); font-weight: 500; }
+        .ec-pub-btn { padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; background: rgba(16,185,129,.1); color: #10b981; border: 1px solid rgba(16,185,129,.22); }
+        .ec-pub-btn:hover { background: rgba(16,185,129,.18); }
+        .ec-unpub-btn { padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; background: rgba(245,158,11,.08); color: #f59e0b; border: 1px solid rgba(245,158,11,.2); }
+        .ec-unpub-btn:hover { background: rgba(245,158,11,.16); }
+        .ec-del-btn { margin-left: auto; padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; background: transparent; color: rgba(239,68,68,.65); border: 1px solid rgba(239,68,68,.2); transition: all .2s; display: flex; align-items: center; gap: 6px; }
+        .ec-del-btn:hover { background: rgba(239,68,68,.1); color: #ef4444; border-color: rgba(239,68,68,.4); }
+        .ec-del-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* Cards */
+        .ec-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 24px; margin-bottom: 14px; }
+        .ec-card-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.28); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 20px; }
+
+        /* Fields */
+        .ec-label { display: block; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.38); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 7px; }
+        .ec-field { margin-bottom: 18px; }
+        .ec-field:last-child { margin-bottom: 0; }
+        .ec-input, .ec-textarea { width: 100%; padding: 11px 16px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .2s; box-sizing: border-box; }
+        .ec-input:focus, .ec-textarea:focus { border-color: #10b981; }
+        .ec-input::placeholder, .ec-textarea::placeholder { color: rgba(255,255,255,.22); }
+        .ec-textarea { resize: none; height: 108px; line-height: 1.65; }
+        .ec-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 560px) { .ec-two-col { grid-template-columns: 1fr; } }
+
+        /* Thumbnail */
+        .ec-thumb-wrap { position: relative; width: 100%; max-width: 340px; border-radius: 12px; overflow: hidden; border: 1.5px dashed rgba(255,255,255,.12); cursor: pointer; transition: border-color .2s; }
+        .ec-thumb-wrap:hover { border-color: #10b981; }
+        .ec-thumb-wrap img { width: 100%; height: 190px; object-fit: cover; display: block; }
+        .ec-thumb-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.52); opacity: 0; transition: opacity .2s; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; }
+        .ec-thumb-wrap:hover .ec-thumb-overlay { opacity: 1; }
+        .ec-thumb-overlay span { color: #fff; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+
+        /* Action buttons */
+        .ec-divider { height: 1px; background: rgba(255,255,255,.06); margin: 6px 0 20px; }
+        .ec-btn-row { display: flex; gap: 10px; }
+        .ec-btn-ghost { flex: 1; padding: 12px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .ec-btn-ghost:hover { background: rgba(255,255,255,.09); color: #fff; }
+        .ec-btn-ghost:disabled { opacity: .4; cursor: not-allowed; }
+        .ec-btn-save { flex: 2; padding: 12px; border-radius: 10px; background: #10b981; border: none; color: #07090f; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s, transform .15s, box-shadow .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .ec-btn-save:hover:not(:disabled) { background: #0ea472; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.28); }
+        .ec-btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* Delete modal */
+        .ec-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+        .ec-modal { background: #0f172a; border: 1px solid rgba(255,255,255,.1); border-radius: 20px; padding: 28px; max-width: 400px; width: 100%; text-align: center; }
+        .ec-modal-icon { width: 52px; height: 52px; border-radius: 50%; background: rgba(239,68,68,.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 22px; }
+        .ec-modal h3 { color: #fff; font-size: 17px; font-weight: 700; margin-bottom: 8px; font-family: 'DM Sans', sans-serif; }
+        .ec-modal p { color: rgba(255,255,255,.38); font-size: 13px; line-height: 1.65; margin-bottom: 24px; font-family: 'DM Sans', sans-serif; }
+        .ec-modal-btns { display: flex; gap: 10px; }
+        .ec-modal-cancel { flex: 1; padding: 11px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.6); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .ec-modal-confirm { flex: 1; padding: 11px; border-radius: 10px; background: #ef4444; border: none; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; }
+      `}</style>
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="ec-modal-bg">
+          <div className="ec-modal">
+            <div className="ec-modal-icon">🗑️</div>
+            <h3>Delete Course?</h3>
+            <p>This will permanently remove the course and all its lectures. This action cannot be undone.</p>
+            <div className="ec-modal-btns">
+              <button className="ec-modal-cancel" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <button className="ec-modal-confirm" onClick={handleRemoveCourse}>
+                {loading1 ? <ClipLoader size={14} color="#fff" /> : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
-      </button>
+      )}
 
-      <div className="relative z-10 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
-          <div className="text-center lg:text-left">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Edit Course
-            </h1>
-            <p className="text-gray-300 mt-1">Update your course information</p>
-          </div>
-          <button 
-  className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-2xl font-semibold px-6 py-3 shadow-2xl hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 cursor-pointer"
-  onClick={() => navigate(`/create-lecture/${courseId}`)} // Fixed path
->
-  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-  <span className="relative z-10">Go To Lecture Page</span>
-</button>
-        </div>
+      <div className="ec-root">
+        <div className="ec-glow1" /><div className="ec-glow2" /><div className="ec-grid" />
 
-        {/* Main Form Container */}
-        <div className="bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 lg:p-8">
-          {/* Publish/Remove Actions */}
-          <div className="flex flex-wrap gap-4 mb-8 p-4 bg-white/5 rounded-2xl border border-white/10">
-            {!isPublished ? (
-              <button
-                className="group flex items-center gap-2 bg-green-500/20 text-green-400 border border-green-400/30 px-4 py-2 rounded-xl hover:bg-green-500/30 transition-all duration-300 hover:scale-105 cursor-pointer"
-                onClick={() => setIsPublished(true)}
-              >
-                <span>📢</span>
-                Publish Course
-              </button>
-            ) : (
-              <button
-                className="group flex items-center gap-2 bg-yellow-500/20 text-yellow-400 border border-yellow-400/30 px-4 py-2 rounded-xl hover:bg-yellow-500/30 transition-all duration-300 hover:scale-105 cursor-pointer"
-                onClick={() => setIsPublished(false)}
-              >
-                <span>⏸️</span>
-                Unpublish Course
-              </button>
-            )}
-            <button 
-              className="group flex items-center gap-2 bg-red-500/20 text-red-400 border border-red-400/30 px-4 py-2 rounded-xl hover:bg-red-500/30 transition-all duration-300 hover:scale-105 cursor-pointer disabled:opacity-50"
-              onClick={handleRemoveCourse}
-              disabled={loading1}
-            >
-              {loading1 ? <ClipLoader size={16} color="#ef4444" /> : <FaTimes className="w-4 h-4" />}
-              Remove Course
+        <div className="ec-inner">
+
+          {/* Back */}
+          <button className="ec-back" onClick={() => navigate("/courses")}>
+            <FaArrowLeftLong size={11} /> Back to Courses
+          </button>
+
+          {/* Top row */}
+          <div className="ec-toprow">
+            <div>
+              <div className="ec-eyebrow">Educator</div>
+              <h1 className="ec-title">Edit <em>course</em></h1>
+            </div>
+            <button className="ec-lec-btn" onClick={() => navigate(`/create-lecture/${courseId}`)}>
+              📹 Manage Lectures
             </button>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-            {/* Title */}
-            <div className="group">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                Course Title *
-              </label>
-              <input
-                id="title"
-                type="text"
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 cursor-text hover:border-white/20"
-                placeholder="Enter course title"
-                onChange={(e) => setTitle(e.target.value)}
-                value={title}
-              />
-            </div>
+          {/* Status bar */}
+          <div className="ec-status-bar">
+            <span className="ec-status-dot">Visibility:</span>
+            {!isPublished ? (
+              <button className="ec-pub-btn" onClick={() => setIsPublished(true)}>● Publish</button>
+            ) : (
+              <button className="ec-unpub-btn" onClick={() => setIsPublished(false)}>⏸ Unpublish</button>
+            )}
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,.2)" }}>
+              {isPublished ? "Live — visible to students" : "Draft — hidden from students"}
+            </span>
+            <button className="ec-del-btn" onClick={() => setShowDeleteModal(true)} disabled={loading1}>
+              {loading1 ? <ClipLoader size={11} color="#ef4444" /> : <FaTimes size={11} />}
+              Delete
+            </button>
+          </div>
 
-            {/* Subtitle */}
-            <div className="group">
-              <label htmlFor="subtitle" className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                Course Subtitle
-              </label>
-              <input
-                id="subtitle"
-                type="text"
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 cursor-text hover:border-white/20"
-                placeholder="Enter course subtitle"
-                onChange={(e) => setSubTitle(e.target.value)}
-                value={subTitle}
-              />
+          {/* Basic Info */}
+          <div className="ec-card">
+            <div className="ec-card-title">Basic Information</div>
+            <div className="ec-field">
+              <label className="ec-label">Title <span style={{ color: "#10b981" }}>*</span></label>
+              <input className="ec-input" type="text" placeholder="Enter course title" value={title} onChange={e => setTitle(e.target.value)} />
             </div>
-
-            {/* Description */}
-            <div className="group">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                Course Description
-              </label>
-              <textarea
-                id="description"
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 cursor-text hover:border-white/20 resize-none h-32"
-                placeholder="Describe your course..."
-                onChange={(e) => setDescription(e.target.value)}
-                value={description}
-              />
+            <div className="ec-field">
+              <label className="ec-label">Subtitle</label>
+              <input className="ec-input" type="text" placeholder="Enter a short subtitle" value={subTitle} onChange={e => setSubTitle(e.target.value)} />
             </div>
+            <div className="ec-field">
+              <label className="ec-label">Description</label>
+              <textarea className="ec-textarea" placeholder="Describe what students will learn..." value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
+          </div>
 
-            {/* Category + Level */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Category */}
-              <div className="group">
-                <label className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                  Course Category *
-                </label>
-                <select
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 cursor-pointer hover:border-white/20 appearance-none"
-                  onChange={(e) => setCategory(e.target.value)}
-                  value={category}
-                >
-                  <option value="" className="bg-slate-800 text-white">Select Category</option>
-                  <option value="App Development" className="bg-slate-800 text-white cursor-pointer">App Development</option>
-                  <option value="Web Development" className="bg-slate-800 text-white cursor-pointer">Web Development</option>
-                  <option value="Data Science" className="bg-slate-800 text-white cursor-pointer">Data Science</option>
-                  <option value="Artificial Intelligence" className="bg-slate-800 text-white cursor-pointer">Artificial Intelligence</option>
-                  <option value="Machine Learning" className="bg-slate-800 text-white cursor-pointer">Machine Learning</option>
-                  <option value="Cloud Computing" className="bg-slate-800 text-white cursor-pointer">Cloud Computing</option>
-                  <option value="Cyber Security" className="bg-slate-800 text-white cursor-pointer">Cyber Security</option>
-                  <option value="Blockchain" className="bg-slate-800 text-white cursor-pointer">Blockchain</option>
-                  <option value="Game Development" className="bg-slate-800 text-white cursor-pointer">Game Development</option>
-                  <option value="UI/UX Design" className="bg-slate-800 text-white cursor-pointer">UI/UX Design</option>
-                </select>
+          {/* Settings */}
+          <div className="ec-card">
+            <div className="ec-card-title">Course Settings</div>
+            <div className="ec-two-col" style={{ marginBottom: 18 }}>
+              <div>
+                <label className="ec-label">Category <span style={{ color: "#10b981" }}>*</span></label>
+                <Dropdown value={category} onChange={setCategory} options={CATEGORIES} placeholder="Select category" />
               </div>
-
-              {/* Level */}
-              <div className="group">
-                <label className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                  Course Level *
-                </label>
-                <select
-                  className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 cursor-pointer hover:border-white-20 appearance-none"
-                  onChange={(e) => setLevel(e.target.value)}
-                  value={level}
-                >
-                  <option value="" className="bg-slate-800 text-white">Select Level</option>
-                  <option value="Beginner" className="bg-slate-800 text-white cursor-pointer">Beginner</option>
-                  <option value="Intermediate" className="bg-slate-800 text-white cursor-pointer">Intermediate</option>
-                  <option value="Advanced" className="bg-slate-800 text-white cursor-pointer">Advanced</option>
-                </select>
+              <div>
+                <label className="ec-label">Level <span style={{ color: "#10b981" }}>*</span></label>
+                <Dropdown value={level} onChange={setLevel} options={LEVELS} placeholder="Select level" />
               </div>
             </div>
-
-            {/* Price */}
-            <div className="group">
-              <label htmlFor="price" className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                Course Price (INR)
-              </label>
-              <input
-                type="number"
-                id="price"
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 cursor-text hover:border-white/20"
-                placeholder="Enter price in INR"
-                onChange={(e) => setPrice(e.target.value)}
-                value={price}
-              />
+            <div className="ec-field" style={{ marginBottom: 0 }}>
+              <label className="ec-label">Price (INR)</label>
+              <input className="ec-input" type="number" placeholder="e.g. 499" value={price} onChange={e => setPrice(e.target.value)} />
             </div>
+          </div>
 
-            {/* Thumbnail Upload */}
-            <div className="group">
-              <label className="block text-sm font-medium text-gray-300 mb-3 cursor-pointer">
-                Course Thumbnail
-              </label>
-              <input
-                type="file"
-                hidden
-                ref={thumb}
-                accept="image/*"
-                onChange={handleThumbnail}
-              />
-              <div
-                className="relative w-full max-w-md border-2 border-dashed border-white/20 rounded-2xl overflow-hidden cursor-pointer group hover:border-cyan-400/50 transition-all duration-300"
-                onClick={() => thumb.current.click()}
-              >
-                <img
-                  src={frontendImage}
-                  alt="thumbnail"
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="text-center">
-                    <FaUpload className="w-8 h-8 text-white mx-auto mb-2" />
-                    <span className="text-white font-medium">Click to change thumbnail</span>
-                  </div>
-                </div>
-                <div className="absolute top-3 right-3 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                  <FaEdit className="w-3 h-3 text-white" />
-                </div>
+          {/* Thumbnail */}
+          <div className="ec-card">
+            <div className="ec-card-title">Thumbnail</div>
+            <input type="file" hidden ref={thumb} accept="image/*" onChange={handleThumbnail} />
+            <div className="ec-thumb-wrap" onClick={() => thumb.current.click()}>
+              <img src={frontendImage} alt="thumbnail" />
+              <div className="ec-thumb-overlay">
+                <FaUpload size={20} color="#fff" />
+                <span>Click to change</span>
               </div>
             </div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginTop: 10, fontFamily: "'DM Sans', sans-serif" }}>
+              Recommended: 1280×720px • JPG or PNG
+            </p>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-              <button
-                type="button"
-                className="group flex items-center justify-center gap-2 px-8 py-3 bg-white/5 backdrop-blur-sm border border-white/10 text-gray-300 rounded-xl font-medium hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-300 hover:scale-105 cursor-pointer"
-                onClick={() => navigate("/courses")}
-              >
-                <FaTimes className="w-4 h-4" />
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleEditCourse}
-                disabled={loading}
-                className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-xl font-semibold px-8 py-3 shadow-2xl hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                <div className="relative flex items-center justify-center gap-2 cursor-pointer">
-                  {loading ? <ClipLoader size={20} color="#ffffff" /> : <FaSave className="w-4 h-4" />}
-                  {loading ? "Saving..." : "Save Changes"}
-                </div>
-              </button>
-            </div>
-          </form>
+          {/* Actions */}
+          <div className="ec-btn-row">
+            <button className="ec-btn-ghost" onClick={() => navigate("/courses")} disabled={loading}>Cancel</button>
+            <button className="ec-btn-save" onClick={handleEditCourse} disabled={loading}>
+              {loading ? <><ClipLoader size={13} color="#07090f" /> Saving...</> : "Save Changes"}
+            </button>
+          </div>
+
         </div>
       </div>
-
-      {/* Custom CSS */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-        
-        select {
-          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-          background-position: right 0.5rem center;
-          background-repeat: no-repeat;
-          background-size: 1.5em 1.5em;
-          padding-right: 2.5rem;
-        }
-        
-        select:focus {
-          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2306B6D4' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-        }
-      `}</style>
-    </div>
+    </>
   );
 };
 
