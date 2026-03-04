@@ -1,7 +1,6 @@
 import axios from 'axios'
 import React, { useState, useEffect } from 'react'
-import { FaArrowLeftLong, FaVideo, FaTrash } from 'react-icons/fa6'
-import { FaTriangleExclamation } from 'react-icons/fa'
+import { FaArrowLeftLong, FaVideo, FaTrash, FaTriangleExclamation } from 'react-icons/fa6'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { serverUrl } from './../../App'
