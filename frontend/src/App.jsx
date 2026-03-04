@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Home from './pages/Home';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
@@ -23,6 +23,7 @@ import ScrollToTop from './component/ScrollToTop';
 import ViewLectures from './pages/ViewLectures';
 import MyEnrolledCourses from './pages/MyEnrolledCourses';
 import getAllReviews from './customHooks/getAllReviews';
+import RenderWakeup from './RenderWakeup'; 
 
 export const serverUrl = "http://localhost:7000";
 
@@ -32,14 +33,15 @@ const App = () => {
   getPublishedCourse();
   getAllReviews();
   const { userData, loading } = useSelector(state => state.user);
+  const [serverReady, setServerReady] = useState(false);
 
   // Conditional rendering inside one return
   return (
     <>
       <ToastContainer />
       <ScrollToTop/>
-      {loading ? (
-        <div className="flex justify-center items-center h-screen">Loading...</div>
+      {!serverReady ? (
+        <RenderWakeup onReady={() => setServerReady(true)} />
       ) : (
         <Routes>
           <Route path="/" element={<Home />} />
