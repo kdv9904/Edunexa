@@ -234,7 +234,7 @@ const EditLecture = () => {
       <div style={styles.root}>
         <div style={styles.glow1} /><div style={styles.glow2} /><div style={styles.grid} />
 
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 600, padding: '48px 0' }}>
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 600}}>
 
           {/* Back */}
           <button style={styles.backBtn} onClick={handleBack}>
@@ -367,11 +367,11 @@ const EditLecture = () => {
 
 const styles = {
   root: {
-    minHeight: '100vh', background: '#07090f',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '24px', fontFamily: "'DM Sans', sans-serif",
-    position: 'relative', overflow: 'hidden',
-  },
+  minHeight: '100vh', background: '#07090f',
+  display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+  padding: '48px 24px 60px', fontFamily: "'DM Sans', sans-serif",
+  position: 'relative', overflow: 'hidden',
+},
   glow1: { position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,.07) 0%, transparent 70%)', top: -120, right: -120, pointerEvents: 'none' },
   glow2: { position: 'absolute', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,.06) 0%, transparent 70%)', bottom: -80, left: -80, pointerEvents: 'none' },
   grid: { position: 'absolute', inset: 0, opacity: .025, pointerEvents: 'none', backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '56px 56px' },
@@ -380,7 +380,7 @@ const styles = {
   backBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 7,
     background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
-    borderRadius: 8, padding: '2px 14px', color: 'rgba(255,255,255,.45)',
+    borderRadius: 8, padding: '8px 14px', color: 'rgba(255,255,255,.45)',
     fontSize: 12, fontWeight: 500, cursor: 'pointer', marginBottom: 8,
     fontFamily: "'DM Sans', sans-serif", transition: 'all .2s',
   },
