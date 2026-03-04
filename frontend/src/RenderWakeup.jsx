@@ -19,7 +19,7 @@ export default function RenderWakeup({ onReady }) {
 
   useEffect(() => {
     // Simulate backend wake-up (adjust timing as needed)
-    const totalDuration = 18000; // 18 seconds max
+    const totalDuration = 5000; // 18 seconds max
     const interval = 120;
     const step = (interval / totalDuration) * 100;
 
