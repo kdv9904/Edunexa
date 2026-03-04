@@ -54,16 +54,16 @@ const Profile = () => {
 
         /* Back button */
         .pf-back {
-          position: absolute; top: -48px; left: 0;
-          display: flex; align-items: center; gap: 8px;
-          background: none; border: none; cursor: pointer;
-          color: rgba(255,255,255,.4); font-size: 13px; font-weight: 500;
+          display: inline-flex; align-items: center; gap: 7px;
+          background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+          border-radius: 8px; cursor: pointer;
+          color: rgba(255,255,255,.5); font-size: 12px; font-weight: 500;
           font-family: 'DM Sans', sans-serif;
-          transition: color .2s;
-          padding: 0;
+          transition: all .2s; padding: 6px 12px;
+          position: absolute; top: 16px; left: 20px; z-index: 2;
         }
-        .pf-back:hover { color: #fff; }
-        .pf-back svg { font-size: 12px; }
+        .pf-back:hover { color: #fff; background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+        .pf-back svg { font-size: 11px; }
 
         /* Header band */
         .pf-header {
@@ -188,17 +188,15 @@ const Profile = () => {
 
         <div style={{ position: "relative", width: "100%", maxWidth: 680 }}>
 
-          {/* Back button */}
-          <button className="pf-back" onClick={() => navigate("/")}>
-            <FaArrowLeftLong /> Back to Home
-          </button>
-
           <div className="pf-card">
 
-            {/* Header band */}
+            {/* Header band with back button inside */}
             <div className="pf-header">
               <div className="pf-header-dot1" />
               <div className="pf-header-dot2" />
+              <button className="pf-back" onClick={() => navigate("/")}>
+                <FaArrowLeftLong /> Back to Home
+              </button>
             </div>
 
             {/* Body */}
