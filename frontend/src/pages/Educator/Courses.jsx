@@ -57,7 +57,7 @@ const Courses = () => {
            </div>
            <button 
              className='group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-2xl font-semibold px-6 py-3 shadow-2xl hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 flex items-center gap-2'
-             onClick={()=>navigate("/createcourses")}
+             onClick={()=>navigate("/create-course")}
            >
              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
              <FaPlus className="w-4 h-4 relative z-10" />
