@@ -28,20 +28,47 @@ const EditLecture = () => {
 
   // Change to:
 useEffect(() => {
-  if (lectureData && lectureId) {
+  if (!lectureId || !courseId) return;
+
+  // Case 1: Redux already has lectures for this course — use instantly
+  if (lectureData && lectureData.length > 0) {
     const lecture = lectureData.find(l => l._id === lectureId)
     if (lecture) {
       setSelectedLecture(lecture)
       setLectureTitle(lecture.lectureTitle || "")
       setIsPreviewFree(lecture.isPreviewFree || false)
-      setIsLoading(false)  // ← only stop loading when lecture is actually found
-    } else if (lectureData.length > 0) {
-      // Data has loaded but lecture genuinely doesn't exist
+      setIsLoading(false)
+      return
+    }
+  }
+
+  // Case 2: Redux is empty (page refresh) — fetch from API
+  const fetchLectures = async () => {
+    try {
+      const res = await axios.get(
+        `${serverUrl}/api/course/getcourselectures/${courseId}`,
+        { withCredentials: true }
+      )
+      const lectures = res.data.lectures || res.data || []
+      
+      dispatch(setLectureData(lectures))  // populate Redux for rest of app
+      
+      const lecture = lectures.find(l => l._id === lectureId)
+      if (lecture) {
+        setSelectedLecture(lecture)
+        setLectureTitle(lecture.lectureTitle || "")
+        setIsPreviewFree(lecture.isPreviewFree || false)
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to load lecture data")
+    } finally {
       setIsLoading(false)
     }
-    // If lectureData is still empty, keep showing the spinner
   }
-}, [lectureData, lectureId])
+
+  fetchLectures()
+}, [courseId, lectureId])  // ← no lectureData dependency to avoid loops
 
   const handleBack = () => navigate(`/create-lecture/${courseId}`)
 
