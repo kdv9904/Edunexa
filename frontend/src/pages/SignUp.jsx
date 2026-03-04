@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import logo from '../assets/logo.jpg'
-import google from '../assets/google.jpg'
-import { FaEye, FaEyeSlash, FaGoogle, FaUser, FaEnvelope, FaLock, FaRocket, FaChalkboardTeacher, FaGraduationCap } from "react-icons/fa";
+import logo from '../assets/logo.png'
+import { FaEye, FaEyeSlash, FaGoogle, FaChalkboardTeacher, FaGraduationCap } from "react-icons/fa";
 import { serverUrl } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -12,56 +11,60 @@ import { useDispatch } from 'react-redux';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, provider } from '../utils/firebase';
 
-const SignUp = () => {
+const PERKS = [
+  {
+    icon: "🎯",
+    title: "Personalized Learning",
+    desc: "AI-curated paths tailored to your goals and pace.",
+  },
+  {
+    icon: "🏆",
+    title: "Industry Certificates",
+    desc: "Earn credentials recognized by top companies.",
+  },
+  {
+    icon: "👨‍🏫",
+    title: "Expert Instructors",
+    desc: "Learn from practitioners with real-world experience.",
+  },
+];
+
+export default function SignUp() {
   const [show, setShow] = useState(false);
-  const [name,setName] = useState("");
-  const [email,setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("student");
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
-  const [password,setPassword] = useState("");
-  const [role,setRole] = useState("student");
-  const [loading,setLoading] = useState(false);
   const dispatch = useDispatch();
 
-  const handleSignup = async() => {
+  useEffect(() => { setMounted(true); }, []);
+
+  const handleSignup = async () => {
     setLoading(true);
-    try{
-      const result = await axios.post(serverUrl + "/api/auth/signup",{
-        name,email,password,role
-      },{
-        withCredentials:true
-      });
+    try {
+      const result = await axios.post(serverUrl + "/api/auth/signup", { name, email, password, role }, { withCredentials: true });
       dispatch(setUserData(result.data));
       setLoading(false);
       navigate("/login");
       toast.success("Sign Up Successful");
-    }catch(err){
-      console.log(err);
+    } catch (err) {
       setLoading(false);
       toast.error(err.response?.data?.message || "Sign up failed");
     }
-  }
+  };
 
   const googleSignUp = async () => {
     try {
       const response = await signInWithPopup(auth, provider);
-      let user = response.user;
-      let name = user.displayName;
-      let email = user.email;
-      
-      const result = await axios.post(serverUrl + "/api/auth/googleauth", {
-        name,
-        email,
-        role
-      }, {
-        withCredentials: true
-      });
+      const { displayName: gName, email: gEmail } = response.user;
+      const result = await axios.post(serverUrl + "/api/auth/googleauth", { name: gName, email: gEmail, role }, { withCredentials: true });
       dispatch(setUserData(result.data));
       toast.success("Google Sign up Successful");
       navigate("/");
-
     } catch (error) {
-      console.error("Google Sign-in Error:", error.code, error.message);
-      
       if (error.code !== "auth/popup-closed-by-user") {
         toast.error("Google sign in failed: " + error.message);
       }
@@ -69,229 +72,341 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 px-4 relative overflow-hidden">
-      
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-pink-500/5 rounded-full blur-2xl"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${8 + Math.random() * 8}s`
-            }}
-          />
-        ))}
-      </div>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      <div className="relative z-10 w-full max-w-4xl flex items-center justify-center">
-        {/* Main Container */}
-        <div className="bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden w-full max-w-3xl">
-          <div className="flex flex-col md:flex-row">
-            {/* Left Side - Sign Up Form */}
-            <div className="w-full md:w-1/2 p-6 md:p-8">
-              {/* Header */}
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <FaRocket className="w-5 h-5 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">
-                  Join Our Community
-                </h1>
-                <p className="text-gray-200 text-xs">
-                  Start your learning journey today
-                </p>
-              </div>
+        .su-root {
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          font-family: 'DM Sans', sans-serif;
+          background: #0c0f1a;
+        }
+        @media (max-width: 820px) {
+          .su-root { grid-template-columns: 1fr; }
+          .su-left  { display: none; }
+          .su-right { min-height: 100vh; }
+        }
 
-              {/* Sign Up Form */}
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                {/* Name Input */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-200 mb-1 flex items-center gap-2">
-                    <FaUser className="w-3 h-3 text-cyan-400" />
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-all duration-300 group-hover:border-cyan-300 text-sm"
-                    placeholder="Enter your full name"
-                    onChange={(e)=>setName(e.target.value)} 
-                    value={name}
-                  />
-                </div>
+        /* ── LEFT PANEL ── */
+        .su-left {
+          position: relative;
+          background: #0c0f1a;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 52px 52px 44px;
+          overflow: hidden;
+        }
+        .su-left-bg {
+          position: absolute; inset: 0; z-index: 0;
+          background:
+            radial-gradient(ellipse 60% 50% at 20% 10%, rgba(99,102,241,.13) 0%, transparent 60%),
+            radial-gradient(ellipse 50% 60% at 85% 85%, rgba(16,185,129,.12) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(245,158,11,.05) 0%, transparent 60%);
+        }
+        .su-grid {
+          position: absolute; inset: 0; z-index: 0; opacity: .035;
+          background-image:
+            linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+          background-size: 48px 48px;
+        }
 
-                {/* Email Input */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-200 mb-1 flex items-center gap-2">
-                    <FaEnvelope className="w-3 h-3 text-purple-400" />
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-all duration-300 group-hover:border-purple-300 text-sm"
-                    placeholder="Enter your email address"
-                    onChange={(e)=>setEmail(e.target.value)} 
-                    value={email}
-                  />
-                </div>
+        .su-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
+        .su-brand-logo { width: 40px; height: 40px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); }
+        .su-brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .su-brand-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+        .su-brand-name span { color: #10b981; }
 
-                {/* Password Input */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-200 mb-1 flex items-center gap-2">
-                    <FaLock className="w-3 h-3 text-pink-400" />
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={show ? "text" : "password"}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 transition-all duration-300 group-hover:border-pink-300 pr-10 text-sm"
-                      placeholder="Create a strong password"
-                      onChange={(e)=>setPassword(e.target.value)} 
-                      value={password}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
-                      onClick={() => setShow(prev => !prev)}
-                    >
-                      {show ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+        .su-hero { position: relative; z-index: 1; }
+        .su-tag {
+          display: inline-flex; align-items: center; gap: 7px;
+          background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25);
+          padding: 5px 14px; border-radius: 100px; margin-bottom: 24px;
+        }
+        .su-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #818cf8; animation: blink 1.8s ease infinite; }
+        .su-tag span { font-size: 11px; font-weight: 500; color: #818cf8; letter-spacing: 1px; text-transform: uppercase; }
+        .su-headline {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(30px, 3.2vw, 44px); font-weight: 700;
+          color: #fff; line-height: 1.2; margin-bottom: 18px;
+        }
+        .su-headline em { color: #10b981; font-style: normal; }
+        .su-sub { font-size: 15px; color: rgba(255,255,255,.45); line-height: 1.7; max-width: 340px; margin-bottom: 0; }
 
-                {/* Role Selection */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-200 mb-2">
-                    Select Your Role
-                  </label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all duration-300 text-sm font-medium ${
-                        role === "student" 
-                          ? "bg-cyan-500/20 border-cyan-400/50 text-cyan-300 shadow-lg" 
-                          : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10"
-                      }`}
-                      onClick={()=>setRole("student")}
-                    >
-                      <FaGraduationCap className="w-4 h-4" />
-                      Student
-                    </button>
-                    <button
-                      type="button"
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border transition-all duration-300 text-sm font-medium ${
-                        role === "educator" 
-                          ? "bg-purple-500/20 border-purple-400/50 text-purple-300 shadow-lg" 
-                          : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10"
-                      }`}
-                      onClick={()=>setRole("educator")}
-                    >
-                      <FaChalkboardTeacher className="w-4 h-4" />
-                      Educator
-                    </button>
-                  </div>
-                </div>
+        /* Perks list */
+        .su-perks { display: flex; flex-direction: column; gap: 16px; position: relative; z-index: 1; }
+        .su-perk {
+          display: flex; align-items: flex-start; gap: 14px;
+          background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+          border-radius: 14px; padding: 16px 18px;
+          transition: border-color .3s;
+        }
+        .su-perk:hover { border-color: rgba(16,185,129,.25); }
+        .su-perk-icon { font-size: 22px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+        .su-perk-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+        .su-perk-desc { font-size: 12px; color: rgba(255,255,255,.4); line-height: 1.5; }
 
-                {/* Sign Up Button */}
-                <button
-                  className="group relative w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-2.5 px-4 rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
-                  onClick={handleSignup}
-                  disabled={loading}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  <span className="relative flex items-center justify-center gap-2">
-                    {loading ? <ClipLoader size={16} color="white" /> : "Create Account"}
-                  </span>
-                </button>
-              </form>
+        .su-bottom { position: relative; z-index: 1; }
+        .su-count {
+          display: flex; align-items: center; gap: 8px;
+          padding: 12px 18px;
+          background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.18);
+          border-radius: 12px; width: fit-content;
+        }
+        .su-count-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; animation: blink 1.8s ease infinite; }
+        .su-count span { font-size: 12px; color: rgba(255,255,255,.6); }
+        .su-count strong { color: #10b981; }
 
-              {/* Divider */}
-              <div className="flex items-center my-4">
-                <div className="flex-1 h-px bg-white/20"></div>
-                <span className="px-3 text-xs text-gray-300">or continue with</span>
-                <div className="flex-1 h-px bg-white/20"></div>
-              </div>
+        /* ── RIGHT PANEL ── */
+        .su-right {
+          background: #f7f8fa;
+          display: flex; align-items: center; justify-content: center;
+          padding: 48px 32px;
+        }
+        .su-card {
+          width: 100%; max-width: 420px;
+          opacity: 0; transform: translateY(24px);
+          transition: opacity .7s ease, transform .7s ease;
+        }
+        .su-card.visible { opacity: 1; transform: translateY(0); }
 
-              {/* Google Sign Up */}
-              <button
-                className="group w-full flex items-center justify-center gap-2 py-2 px-4 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 text-sm"
-                onClick={googleSignUp}
-              >
-                <FaGoogle className="w-4 h-4 text-red-400" />
-                <span className="font-medium">Sign up with Google</span>
-              </button>
+        .su-form-header { margin-bottom: 28px; }
+        .su-form-eyebrow { font-size: 11px; font-weight: 600; color: #6366f1; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .su-form-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #0c0f1a; line-height: 1.2; }
+        .su-form-sub { font-size: 13.5px; color: #8b909a; margin-top: 6px; }
 
-              {/* Login Link */}
-              <div className="text-center mt-4">
-                <p className="text-gray-300 text-xs">
-                  Already have an account?{" "}
-                  <button
-                    className="text-cyan-300 hover:text-cyan-200 font-semibold transition-colors duration-200"
-                    onClick={() => navigate('/login')}
-                  >
-                    Login
-                  </button>
-                </p>
-              </div>
+        .su-field { margin-bottom: 16px; }
+        .su-label { display: block; font-size: 11px; font-weight: 600; color: #3d4152; letter-spacing: .4px; margin-bottom: 7px; text-transform: uppercase; }
+        .su-input-wrap { position: relative; }
+        .su-input {
+          width: 100%; padding: 11px 16px;
+          background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px;
+          font-size: 14px; color: #0c0f1a; font-family: 'DM Sans', sans-serif;
+          outline: none; transition: border-color .25s, box-shadow .25s;
+        }
+        .su-input::placeholder { color: #c1c5ce; }
+        .su-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .su-eye {
+          position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer; color: #a0a5b2;
+          display: flex; align-items: center; transition: color .2s;
+        }
+        .su-eye:hover { color: #6366f1; }
+
+        /* Role toggle */
+        .su-role-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .su-role-btn {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          padding: 11px 16px; border-radius: 12px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+          border: 1.5px solid #e5e7eb; background: #fff; color: #8b909a;
+          transition: all .2s;
+        }
+        .su-role-btn:hover { border-color: #c7d2fe; color: #6366f1; }
+        .su-role-btn.active-student { border-color: #10b981; background: rgba(16,185,129,.07); color: #059669; }
+        .su-role-btn.active-educator { border-color: #6366f1; background: rgba(99,102,241,.07); color: #6366f1; }
+        .su-role-icon { font-size: 15px; }
+
+        .su-btn-primary {
+          width: 100%; padding: 13px;
+          background: #0c0f1a; color: #fff;
+          border: none; border-radius: 12px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+          letter-spacing: .3px; position: relative; overflow: hidden;
+          transition: background .25s, transform .15s, box-shadow .25s;
+          margin-top: 4px;
+        }
+        .su-btn-primary:hover:not(:disabled) { background: #1a1f35; box-shadow: 0 8px 24px rgba(12,15,26,.25); transform: translateY(-1px); }
+        .su-btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .su-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+        .su-btn-primary .shine {
+          position: absolute; inset: 0;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.08) 50%, transparent 60%);
+          transform: translateX(-100%); transition: transform .6s ease;
+        }
+        .su-btn-primary:hover .shine { transform: translateX(100%); }
+
+        .su-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+        .su-divider-line { flex: 1; height: 1px; background: #e5e7eb; }
+        .su-divider span { font-size: 11px; color: #b0b5c1; font-weight: 500; white-space: nowrap; }
+
+        .su-btn-google {
+          width: 100%; padding: 11px;
+          background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+          color: #3d4152; display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
+        }
+        .su-btn-google:hover { border-color: #d1d5db; background: #fafafa; box-shadow: 0 2px 12px rgba(0,0,0,.06); transform: translateY(-1px); }
+        .su-google-icon { color: #ea4335; font-size: 16px; }
+
+        .su-login { text-align: center; margin-top: 20px; font-size: 13px; color: #8b909a; }
+        .su-login button {
+          background: none; border: none; cursor: pointer;
+          color: #6366f1; font-weight: 600; font-family: 'DM Sans', sans-serif; font-size: 13px; margin-left: 4px;
+        }
+        .su-login button:hover { text-decoration: underline; }
+
+        .su-trust { display: flex; align-items: center; gap: 8px; margin-top: 24px; justify-content: center; }
+        .su-trust-dot { width: 5px; height: 5px; border-radius: 50%; background: #10b981; }
+        .su-trust span { font-size: 11px; color: #b0b5c1; }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: .3; }
+        }
+      `}</style>
+
+      <div className="su-root">
+
+        {/* ── LEFT PANEL ── */}
+        <div className="su-left">
+          <div className="su-left-bg" />
+          <div className="su-grid" />
+
+          {/* Brand */}
+          <div className="su-brand">
+            <div className="su-brand-logo"><img src={logo} alt="EduNexa" /></div>
+            <div className="su-brand-name">Edu<span>nexa</span></div>
+          </div>
+
+          {/* Hero */}
+          <div className="su-hero">
+            <div className="su-tag">
+              <div className="su-tag-dot" />
+              <span>Free to Join</span>
             </div>
+            <h1 className="su-headline">
+              Your Journey<br />Starts <em>Here.</em>
+            </h1>
+            <p className="su-sub">
+              Join a global community of learners and educators building real skills for a changing world.
+            </p>
+          </div>
 
-            {/* Right Side - Brand Section */}
-            <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-pink-500/20 backdrop-blur-xl border-l border-white/20 flex-col items-center justify-center p-6 text-white relative overflow-hidden">
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-400 rounded-full blur-xl"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-400 rounded-full blur-xl"></div>
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg border border-white/20">
-                  <img
-                    src={logo}
-                    alt="logo"
-                    className="w-15 h-15 rounded-lg object-cover"
-                  />
-                </div>
-                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                  AI LMS
-                </h2>
-                <p className="text-gray-200 text-sm mb-4 max-w-xs">
-                  Join thousands of learners transforming their skills with AI-powered education.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-cyan-300">
-                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs">10,000+ successful learners</span>
+          {/* Perks */}
+          <div className="su-perks">
+            {PERKS.map(p => (
+              <div className="su-perk" key={p.title}>
+                <div className="su-perk-icon">{p.icon}</div>
+                <div>
+                  <div className="su-perk-title">{p.title}</div>
+                  <div className="su-perk-desc">{p.desc}</div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {/* Bottom counter */}
+          <div className="su-bottom">
+            <div className="su-count">
+              <div className="su-count-dot" />
+              <span><strong>50,000+</strong> learners already on board</span>
             </div>
           </div>
         </div>
+
+        {/* ── RIGHT PANEL ── */}
+        <div className="su-right">
+          <div className={`su-card${mounted ? " visible" : ""}`}>
+
+            <div className="su-form-header">
+              <div className="su-form-eyebrow">Create account</div>
+              <h2 className="su-form-title">Start learning<br />for free today</h2>
+              <p className="su-form-sub">No credit card required. Cancel anytime.</p>
+            </div>
+
+            <form onSubmit={e => { e.preventDefault(); handleSignup(); }}>
+
+              {/* Name */}
+              <div className="su-field">
+                <label className="su-label">Full Name</label>
+                <input className="su-input" type="text" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} />
+              </div>
+
+              {/* Email */}
+              <div className="su-field">
+                <label className="su-label">Email Address</label>
+                <input className="su-input" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+
+              {/* Password */}
+              <div className="su-field">
+                <label className="su-label">Password</label>
+                <div className="su-input-wrap">
+                  <input
+                    className="su-input" type={show ? "text" : "password"}
+                    placeholder="Create a strong password"
+                    style={{ paddingRight: 42 }}
+                    value={password} onChange={e => setPassword(e.target.value)}
+                  />
+                  <button type="button" className="su-eye" onClick={() => setShow(p => !p)}>
+                    {show ? <FaEyeSlash size={15} /> : <FaEye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Role */}
+              <div className="su-field">
+                <label className="su-label">I am joining as</label>
+                <div className="su-role-wrap">
+                  <button
+                    type="button"
+                    className={`su-role-btn${role === "student" ? " active-student" : ""}`}
+                    onClick={() => setRole("student")}
+                  >
+                    <FaGraduationCap className="su-role-icon" />
+                    Student
+                  </button>
+                  <button
+                    type="button"
+                    className={`su-role-btn${role === "educator" ? " active-educator" : ""}`}
+                    onClick={() => setRole("educator")}
+                  >
+                    <FaChalkboardTeacher className="su-role-icon" />
+                    Educator
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button className="su-btn-primary" type="submit" disabled={loading}>
+                <div className="shine" />
+                <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  {loading ? <ClipLoader size={16} color="#fff" /> : "Create Free Account"}
+                </span>
+              </button>
+            </form>
+
+            <div className="su-divider">
+              <div className="su-divider-line" />
+              <span>or sign up with</span>
+              <div className="su-divider-line" />
+            </div>
+
+            <button className="su-btn-google" onClick={googleSignUp}>
+              <FaGoogle className="su-google-icon" />
+              Continue with Google
+            </button>
+
+            <div className="su-login">
+              Already have an account?
+              <button onClick={() => navigate('/login')}>Sign in</button>
+            </div>
+
+            <div className="su-trust">
+              <div className="su-trust-dot" />
+              <span>Secured with 256-bit SSL encryption</span>
+            </div>
+
+          </div>
+        </div>
       </div>
-
-      {/* Custom CSS */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-15px) rotate(180deg); }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
-  )
+    </>
+  );
 }
-
-export default SignUp

@@ -1,127 +1,158 @@
 import React from "react";
-import { FaFacebook, FaTwitter, FaLinkedin, FaGithub, FaHeart } from "react-icons/fa";
+import { FaLinkedin, FaGithub } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import logo from "../assets/logo.png";
 
 const Footer = () => {
+  const navigate = useNavigate();
+
   return (
-    <footer className="relative bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-indigo-900/90 backdrop-blur-2xl text-white py-12 px-6 md:px-16 border-t border-white/10">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 -left-20 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl"></div>
-      </div>
+    <>
+      <style>{`
+        .ft-root {
+          background: #07090f;
+          border-top: 1px solid rgba(255,255,255,.07);
+          padding: 64px 24px 32px;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .ft-inner {
+          max-width: 1160px; margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1.8fr 1fr 1fr;
+          gap: 48px;
+        }
+        @media (max-width: 760px) {
+          .ft-inner { grid-template-columns: 1fr; gap: 36px; }
+        }
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 relative z-10">
-        
-        {/* Brand / About */}
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            AI Learning
-          </h2>
-          <p className="text-gray-300 mt-3 text-sm leading-relaxed">
-            Transform your learning with AI-powered insights, personalized courses, 
-            and a smarter way to achieve your goals 🚀.
-          </p>
-          <div className="flex items-center gap-2 mt-4 text-xs text-gray-400">
-            <span>Made with</span>
-            <FaHeart className="w-3 h-3 text-pink-400 animate-pulse" />
-            <span>for learners worldwide</span>
+        /* Brand col */
+        .ft-brand { display: flex; flex-direction: column; gap: 14px; }
+        .ft-logo { display: flex; align-items: center; gap: 10px; }
+        .ft-logo-img {
+          width: 34px; height: 34px; border-radius: 8px; overflow: hidden;
+          border: 1px solid rgba(255,255,255,.1);
+        }
+        .ft-logo-img img { width: 100%; height: 100%; object-fit: cover; }
+        .ft-logo-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -.2px;
+        }
+        .ft-logo-name span { color: #10b981; }
+        .ft-tagline { font-size: 13px; color: rgba(255,255,255,.35); line-height: 1.7; max-width: 260px; }
+        .ft-socials { display: flex; gap: 10px; margin-top: 4px; }
+        .ft-social {
+          width: 36px; height: 36px; border-radius: 10px;
+          border: 1px solid rgba(255,255,255,.1);
+          background: rgba(255,255,255,.04);
+          display: flex; align-items: center; justify-content: center;
+          color: rgba(255,255,255,.4); font-size: 15px;
+          transition: border-color .2s, color .2s, background .2s;
+          text-decoration: none;
+        }
+        .ft-social:hover { border-color: #10b981; color: #10b981; background: rgba(16,185,129,.07); }
+
+        /* Link cols */
+        .ft-col-title {
+          font-size: 11px; font-weight: 700; color: rgba(255,255,255,.5);
+          letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px;
+        }
+        .ft-links { display: flex; flex-direction: column; gap: 11px; }
+        .ft-link {
+          font-size: 13.5px; color: rgba(255,255,255,.4);
+          background: none; border: none; cursor: pointer; text-align: left;
+          padding: 0; font-family: 'DM Sans', sans-serif;
+          transition: color .2s;
+        }
+        .ft-link:hover { color: #fff; }
+
+        /* Contact items */
+        .ft-contacts { display: flex; flex-direction: column; gap: 11px; }
+        .ft-contact-item { display: flex; align-items: center; gap: 9px; }
+        .ft-contact-icon { font-size: 13px; flex-shrink: 0; opacity: .5; }
+        .ft-contact-text { font-size: 13px; color: rgba(255,255,255,.4); }
+
+        /* Bottom bar */
+        .ft-bottom {
+          max-width: 1160px; margin: 48px auto 0;
+          padding-top: 24px; border-top: 1px solid rgba(255,255,255,.06);
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 10px;
+        }
+        .ft-copy { font-size: 12px; color: rgba(255,255,255,.2); }
+        .ft-copy strong { color: rgba(255,255,255,.35); }
+        .ft-bottom-links { display: flex; gap: 20px; }
+        .ft-bottom-link {
+          font-size: 12px; color: rgba(255,255,255,.2);
+          background: none; border: none; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; transition: color .2s;
+        }
+        .ft-bottom-link:hover { color: rgba(255,255,255,.5); }
+      `}</style>
+
+      <footer className="ft-root">
+        <div className="ft-inner">
+
+          {/* Brand */}
+          <div className="ft-brand">
+            <div className="ft-logo">
+              <div className="ft-logo-img"><img src={logo} alt="EduNexa" /></div>
+              <div className="ft-logo-name">Edu<span>nexa</span></div>
+            </div>
+            <p className="ft-tagline">
+              AI-powered education platform helping learners worldwide build real skills for a changing world.
+            </p>
+            <div className="ft-socials">
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="ft-social"><FaLinkedin /></a>
+              <a href="https://github.com" target="_blank" rel="noreferrer" className="ft-social"><FaGithub /></a>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <div className="ft-col-title">Platform</div>
+            <div className="ft-links">
+              {[
+                { label: "Home", path: "/" },
+                { label: "All Courses", path: "/allcourses" },
+                { label: "My Courses", path: "/mycourses" },
+                { label: "Profile", path: "/profile" },
+              ].map(l => (
+                <button key={l.label} className="ft-link" onClick={() => navigate(l.path)}>{l.label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <div className="ft-col-title">Contact</div>
+            <div className="ft-contacts">
+              <div className="ft-contact-item">
+                <span className="ft-contact-icon">📍</span>
+                <span className="ft-contact-text">Dhoraji, Gujarat, India</span>
+              </div>
+              <div className="ft-contact-item">
+                <span className="ft-contact-icon">📧</span>
+                <span className="ft-contact-text">kirtanvyas9916@gmail.com</span>
+              </div>
+              <div className="ft-contact-item">
+                <span className="ft-contact-icon">📞</span>
+                <span className="ft-contact-text">+91 93289 09056</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom bar */}
+        <div className="ft-bottom">
+          <p className="ft-copy">© {new Date().getFullYear()} <strong>EduNexa</strong>. All rights reserved.</p>
+          <div className="ft-bottom-links">
+            <button className="ft-bottom-link">Privacy Policy</button>
+            <button className="ft-bottom-link">Terms of Service</button>
           </div>
         </div>
-
-        {/* Quick Links */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4 text-white">Quick Links</h3>
-          <ul className="space-y-3">
-            {['Home', 'All Courses', 'Profile', 'Dashboard'].map((link) => (
-              <li key={link}>
-                <a 
-                  href="#" 
-                  className="text-gray-300 hover:text-cyan-400 cursor-pointer transition-all duration-300 hover:translate-x-2 flex items-center gap-2 group"
-                >
-                  <div className="w-1 h-1 bg-cyan-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  {link}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Contact */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4 text-white">Contact</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center gap-3 text-gray-300 group hover:text-cyan-300 transition-colors duration-300">
-              <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center border border-cyan-400/30">
-                <span className="text-xs">📍</span>
-              </div>
-              <span>Dhoraji, Gujarat, India</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-300 group hover:text-purple-300 transition-colors duration-300">
-              <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center border border-purple-400/30">
-                <span className="text-xs">📧</span>
-              </div>
-              <span>kirtanvyas9916@gmail.com</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-300 group hover:text-green-300 transition-colors duration-300">
-              <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center border border-green-400/30">
-                <span className="text-xs">📞</span>
-              </div>
-              <span>+91 93289 09056</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Socials */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4 text-white">Follow Us</h3>
-          <p className="text-gray-300 text-sm mb-4">
-            Connect with us for updates and community discussions
-          </p>
-          <div className="flex gap-3">
-            {[
-              { icon: FaFacebook, color: "hover:text-blue-400", bg: "bg-blue-500/20", border: "border-blue-400/30" },
-              { icon: FaTwitter, color: "hover:text-cyan-400", bg: "bg-cyan-500/20", border: "border-cyan-400/30" },
-              { icon: FaLinkedin, color: "hover:text-blue-500", bg: "bg-blue-600/20", border: "border-blue-500/30" },
-              { icon: FaGithub, color: "hover:text-gray-300", bg: "bg-gray-500/20", border: "border-gray-400/30" }
-            ].map((social, index) => (
-              <a 
-                key={index}
-                href="#" 
-                className={`w-10 h-10 ${social.bg} ${social.border} border rounded-xl flex items-center justify-center text-gray-300 ${social.color} transition-all duration-300 hover:scale-110 hover:shadow-lg`}
-              >
-                <social.icon className="w-4 h-4" />
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Bar */}
-      <div className="mt-12 border-t border-white/10 pt-6 text-center relative z-10">
-        <div className="text-gray-400 text-sm">
-          © {new Date().getFullYear()} <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-semibold">AILMS</span>. All rights reserved.
-        </div>
-        <div className="text-gray-500 text-xs mt-2">
-          Empowering learners through AI-driven education
-        </div>
-      </div>
-
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-cyan-400/30 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${10 + Math.random() * 10}s`
-            }}
-          />
-        ))}
-      </div>
-    </footer>
+      </footer>
+    </>
   );
 };
 

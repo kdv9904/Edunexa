@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/logo.png';
 import { IoMenu, IoClose } from "react-icons/io5";
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
@@ -13,17 +13,24 @@ const Nav = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Handle scroll effect for navbar
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
   }, []);
 
   const handleLogout = async () => {
@@ -32,327 +39,329 @@ const Nav = () => {
       dispatch(setUserData(null));
       navigate("/login");
       setShowDropdown(false);
-      setIsMobileMenuOpen(false);
+      setMobileOpen(false);
     } catch (err) {
       console.error("Logout failed:", err);
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  const iseducator = userData?.user?.role === 'educator';
-  const isStudent = userData?.user?.role === 'student';
+  const isEducator = userData?.user?.role === 'educator';
+  const isStudent  = userData?.user?.role === 'student';
 
   return (
-    <nav className={`w-full h-20 fixed top-0 px-6 py-4 flex items-center justify-between 
-                    transition-all duration-500 z-50 ${
-                      isScrolled 
-                        ? 'bg-white/10 backdrop-blur-2xl border-b border-white/20 shadow-2xl' 
-                        : 'bg-transparent backdrop-blur-sm'
-                    }`}>
-      
-      {/* Animated Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-pink-500/5 pointer-events-none"></div>
-      
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${8 + Math.random() * 8}s`
-            }}
-          />
-        ))}
-      </div>
+    <>
+      <style>{`
+        .nav-root {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+          height: 68px;
+          display: flex; align-items: center;
+          padding: 0 32px;
+          justify-content: space-between;
+          font-family: 'DM Sans', sans-serif;
+          transition: background .3s ease, border-color .3s ease, backdrop-filter .3s ease;
+        }
+        .nav-root.scrolled {
+          background: rgba(7,9,15,.85);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+        .nav-root.top {
+          background: transparent;
+        }
 
-      {/* Logo */}
-      <div className="flex items-center relative z-10">
-        <div className="relative group">
-          <div className="absolute -inset-3 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-all duration-500"></div>
-          <img 
-            src={logo} 
-            alt="logo" 
-            className="w-12 h-12 rounded-2xl border-2 border-white/30 cursor-pointer transition-all duration-300 group-hover:scale-110 group-hover:border-cyan-400/60 relative z-10 shadow-2xl"
-            onClick={() => navigate("/")}
-          />
+        /* Logo */
+        .nav-logo {
+          display: flex; align-items: center; gap: 10px; cursor: pointer;
+          text-decoration: none;
+        }
+        .nav-logo-img {
+          width: 36px; height: 36px; border-radius: 10px; overflow: hidden;
+          border: 1px solid rgba(255,255,255,.12);
+          flex-shrink: 0;
+        }
+        .nav-logo-img img { width: 100%; height: 100%; object-fit: cover; }
+        .nav-logo-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -.2px;
+        }
+        .nav-logo-name span { color: #10b981; }
+
+        /* Desktop right side */
+        .nav-right {
+          display: flex; align-items: center; gap: 8px;
+        }
+        @media (max-width: 768px) { .nav-right { display: none; } }
+
+        /* Nav buttons */
+        .nav-btn {
+          padding: 8px 18px; border-radius: 10px;
+          background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+          color: rgba(255,255,255,.7); font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          display: flex; align-items: center; gap: 7px;
+          transition: all .2s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.2); }
+
+        /* Sign out btn */
+        .nav-btn-signout {
+          padding: 8px 14px; border-radius: 10px;
+          background: transparent; border: 1px solid rgba(239,68,68,.25);
+          color: rgba(239,68,68,.7); font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          display: flex; align-items: center; gap: 6px;
+          transition: all .2s;
+        }
+        .nav-btn-signout:hover { background: rgba(239,68,68,.1); color: #ef4444; border-color: rgba(239,68,68,.4); }
+
+        /* Get started btn */
+        .nav-btn-cta {
+          padding: 9px 22px; border-radius: 10px;
+          background: #10b981; color: #07090f;
+          border: none; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+          transition: background .2s, transform .15s, box-shadow .2s;
+        }
+        .nav-btn-cta:hover { background: #0ea472; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.3); }
+
+        /* Avatar */
+        .nav-avatar-wrap {
+          position: relative; cursor: pointer;
+        }
+        .nav-avatar {
+          width: 36px; height: 36px; border-radius: 10px; overflow: hidden;
+          border: 1.5px solid rgba(255,255,255,.15);
+          background: linear-gradient(135deg, #10b981, #6366f1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; font-weight: 700; color: #fff;
+          transition: border-color .2s;
+        }
+        .nav-avatar:hover { border-color: #10b981; }
+        .nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .nav-online {
+          position: absolute; bottom: -2px; right: -2px;
+          width: 10px; height: 10px; border-radius: 50%;
+          background: #10b981; border: 2px solid #07090f;
+        }
+
+        /* Dropdown */
+        .nav-dropdown {
+          position: absolute; top: calc(100% + 10px); right: 0;
+          width: 260px;
+          background: #0f172a;
+          border: 1px solid rgba(255,255,255,.1);
+          border-radius: 16px;
+          padding: 6px;
+          box-shadow: 0 20px 60px rgba(0,0,0,.6);
+          z-index: 100;
+        }
+        .nav-dropdown-header {
+          padding: 14px 14px 12px;
+          border-bottom: 1px solid rgba(255,255,255,.07);
+          margin-bottom: 4px;
+        }
+        .nav-dropdown-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+        .nav-dropdown-email { font-size: 11px; color: rgba(255,255,255,.35); margin-bottom: 8px; word-break: break-all; }
+        .nav-dropdown-role {
+          display: inline-block;
+          padding: 3px 10px; border-radius: 100px;
+          background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.2);
+          font-size: 10px; font-weight: 600; color: #10b981;
+          text-transform: capitalize; letter-spacing: .5px;
+        }
+        .nav-dropdown-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 14px; border-radius: 10px;
+          color: rgba(255,255,255,.6); font-size: 13px; font-weight: 500;
+          cursor: pointer; background: none; border: none; width: 100%;
+          font-family: 'DM Sans', sans-serif; text-align: left;
+          transition: background .15s, color .15s;
+        }
+        .nav-dropdown-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+        .nav-dropdown-item svg { font-size: 13px; flex-shrink: 0; }
+
+        /* Mobile toggle */
+        .nav-mobile-btn {
+          display: none;
+          background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+          color: #fff; font-size: 20px; border-radius: 10px;
+          padding: 8px; cursor: pointer; align-items: center; justify-content: center;
+          transition: background .2s;
+        }
+        .nav-mobile-btn:hover { background: rgba(255,255,255,.12); }
+        @media (max-width: 768px) { .nav-mobile-btn { display: flex; } }
+
+        /* Mobile menu */
+        .nav-mobile-menu {
+          position: fixed; top: 68px; left: 0; right: 0;
+          background: #0a0d16;
+          border-bottom: 1px solid rgba(255,255,255,.07);
+          padding: 16px 20px 24px;
+          display: flex; flex-direction: column; gap: 8px;
+          z-index: 49;
+        }
+        .nav-mobile-user {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px; border-radius: 14px;
+          background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+          margin-bottom: 4px;
+        }
+        .nav-mobile-avatar {
+          width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+          border: 1.5px solid rgba(255,255,255,.15);
+          background: linear-gradient(135deg, #10b981, #6366f1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+        .nav-mobile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .nav-mobile-name { font-size: 14px; font-weight: 700; color: #fff; }
+        .nav-mobile-role {
+          font-size: 10px; color: #10b981; font-weight: 600;
+          text-transform: capitalize; letter-spacing: .5px; margin-top: 2px;
+        }
+        .nav-mobile-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 14px; border-radius: 10px;
+          background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+          color: rgba(255,255,255,.6); font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: background .15s, color .15s; width: 100%; text-align: left;
+        }
+        .nav-mobile-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+        .nav-mobile-item.danger {
+          border-color: rgba(239,68,68,.2); color: rgba(239,68,68,.7);
+        }
+        .nav-mobile-item.danger:hover { background: rgba(239,68,68,.08); color: #ef4444; }
+        .nav-mobile-item.cta {
+          background: #10b981; border-color: #10b981; color: #07090f;
+          font-weight: 700; justify-content: center;
+        }
+        .nav-mobile-item.cta:hover { background: #0ea472; }
+      `}</style>
+
+      <nav className={`nav-root${scrolled ? ' scrolled' : ' top'}`}>
+
+        {/* Logo */}
+        <div className="nav-logo" onClick={() => navigate("/")}>
+          <div className="nav-logo-img"><img src={logo} alt="EduNexa" /></div>
+          <div className="nav-logo-name">Edu<span>nexa</span></div>
         </div>
-      </div>
 
-      {/* Desktop Navigation */}
-      <div className="hidden md:flex items-center justify-end gap-4 relative z-10">
-        {/* My Learning - Only for Students */}
-        {isStudent && (
-          <button 
-            className="group relative overflow-hidden px-5 py-2.5 border border-green-400/40 text-white rounded-2xl text-sm font-medium 
-                       bg-white/10 backdrop-blur-xl hover:bg-green-500/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20"
-            onClick={() => navigate("/mycourses")}
-          >
-            <div className="flex items-center gap-2">
-              <FaGraduationCap className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span>My Learning</span>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-          </button>
-        )}
+        {/* Desktop right */}
+        <div className="nav-right">
+          {isStudent && (
+            <button className="nav-btn" onClick={() => navigate("/mycourses")}>
+              <FaGraduationCap size={12} /> My Learning
+            </button>
+          )}
+          {isEducator && (
+            <button className="nav-btn" onClick={() => navigate("/dashboard")}>
+              <FaChalkboardTeacher size={12} /> Dashboard
+            </button>
+          )}
 
-        {iseducator && (
-          <button 
-            className="group relative overflow-hidden px-5 py-2.5 border border-cyan-400/40 text-white rounded-2xl text-sm font-medium 
-                       bg-white/10 backdrop-blur-xl hover:bg-cyan-500/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20"
-            onClick={() => navigate("/dashboard")}
-          >
-            <div className="flex items-center gap-2">
-              <FaChalkboardTeacher className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-              <span>Dashboard</span>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-          </button>
-        )}
-
-        {userData ? (
-          <div className="flex items-center gap-3 relative">
-            {/* Profile Section */}
-            <div className="flex items-center gap-2" ref={dropdownRef}>
-              {/* Signout Button */}
-              <button 
-                className="flex items-center gap-2 px-4 py-2.5 text-red-300 hover:bg-red-500/20 transition-all duration-300 group rounded-2xl border border-red-400/40 backdrop-blur-xl hover:scale-105"
-                onClick={handleLogout}
-                title="Sign Out"
-              >
-                <FaSignOutAlt className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium hidden lg:block">Sign Out</span>
+          {userData ? (
+            <>
+              <button className="nav-btn-signout" onClick={handleLogout}>
+                <FaSignOutAlt size={12} /> Sign Out
               </button>
 
-              {/* Profile Avatar */}
-              <div 
-                className="relative group cursor-pointer"
-                onClick={() => setShowDropdown(!showDropdown)}
-              >
-                <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-40 blur-lg transition-all duration-500"></div>
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg border-2 border-white/30 
-                             bg-white/10 backdrop-blur-xl overflow-hidden relative z-10 transition-all duration-300 group-hover:scale-110 group-hover:border-cyan-400/60 shadow-2xl">
-                  {userData.user.photoUrl ? (
-                    <img src={userData.user.photoUrl} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="font-bold text-white">
-                      {userData.user.name?.charAt(0).toUpperCase() || "?"}
-                    </span>
-                  )}
-                </div>
-                {/* Online Indicator */}
-                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-400 border-2 border-white rounded-full z-20 shadow-lg"></div>
-              </div>
-            </div>
-
-            {/* Enhanced Dropdown */}
-            {showDropdown && (
-              <div className="absolute top-full right-0 mt-3 w-72 bg-white/10 backdrop-blur-2xl text-white rounded-3xl shadow-2xl py-4 z-50 border border-white/20">
-                {/* User Info Header */}
-                <div className="px-5 py-4 border-b border-white/20">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/30 shadow-2xl">
-                      {userData.user.photoUrl ? (
-                        <img src={userData.user.photoUrl} alt="avatar" className="w-full h-full rounded-2xl object-cover" />
-                      ) : (
-                        userData.user.name?.charAt(0).toUpperCase() || "?"
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-lg truncate">{userData.user.name}</p>
-                      <p className="text-gray-200 truncate">{userData.user.email}</p>
-                    </div>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/30 rounded-full border border-cyan-400/50 backdrop-blur-sm">
-                    <span className="text-sm font-medium text-cyan-200">{userData.user.role}</span>
-                  </div>
-                </div>
-                
-                {/* Dropdown Items */}
-                <div className="py-2">
-                  <button 
-                    className="flex items-center gap-4 w-full px-5 py-3 hover:bg-white/10 transition-all duration-300 group rounded-xl mx-2"
-                    onClick={() => { navigate("/profile"); setShowDropdown(false); }}
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <FaUser className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-medium text-white">My Profile</span>
-                  </button>
-                  
-                  <button 
-                    className="flex items-center gap-4 w-full px-5 py-3 hover:bg-white/10 transition-all duration-300 group rounded-xl mx-2"
-                    onClick={() => { 
-                      if (userData?.user?.role === "educator") {
-                        navigate("/courses"); 
-                      } else {
-                        navigate("/allcourses"); 
-                      }
-                      setShowDropdown(false); 
-                    }}
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                      <FaBook className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-medium text-white">All Courses</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button 
-            className="group relative overflow-hidden px-8 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-2xl font-semibold 
-                       shadow-2xl hover:shadow-cyan-500/30 transition-all duration-500 hover:scale-105 border border-cyan-400/30"
-            onClick={() => navigate("/login")}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-            <span className="relative">Get Started</span>
-          </button>
-        )}
-      </div>
-
-      {/* Mobile Menu Button */}
-      <button 
-        className={`md:hidden text-white text-2xl relative z-10 p-3 rounded-2xl transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-white/20 backdrop-blur-2xl border border-white/30 hover:bg-white/30' 
-            : 'bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20'
-        }`}
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <IoClose /> : <IoMenu />}
-      </button>
-
-      {/* Enhanced Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className={`absolute top-20 left-0 w-full py-8 px-6 md:hidden text-white transition-all duration-500 ${
-          isScrolled 
-            ? 'bg-white/15 backdrop-blur-2xl border-b border-white/20' 
-            : 'bg-black/20 backdrop-blur-2xl border-b border-white/10'
-        }`}>
-          <div className="flex flex-col space-y-4">
-            {/* My Learning - Only for Students in Mobile */}
-            {isStudent && (
-              <button 
-                className="flex items-center gap-4 py-4 px-5 border border-green-400/40 text-white rounded-2xl text-center 
-                           bg-white/10 backdrop-blur-xl hover:bg-green-500/30 transition-all duration-300 hover:scale-105"
-                onClick={() => { navigate("/mycourses"); setIsMobileMenuOpen(false); }}
-              >
-                <FaGraduationCap className="w-5 h-5" />
-                <span className="font-medium">My Learning</span>
-              </button>
-            )}
-
-            {iseducator && (
-              <button 
-                className="flex items-center gap-4 py-4 px-5 border border-cyan-400/40 text-white rounded-2xl text-center 
-                           bg-white/10 backdrop-blur-xl hover:bg-cyan-500/30 transition-all duration-300 hover:scale-105"
-                onClick={() => { navigate("/dashboard"); setIsMobileMenuOpen(false); }}
-              >
-                <FaChalkboardTeacher className="w-5 h-5" />
-                <span className="font-medium">Dashboard</span>
-              </button>
-            )}
-
-            {userData ? (
-              <>
-                {/* User Info Card */}
-                <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-5 border border-white/20 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white font-bold border-2 border-white/30 shadow-2xl">
-                      {userData.user.photoUrl ? (
-                        <img src={userData.user.photoUrl} alt="avatar" className="w-full h-full rounded-2xl object-cover" />
-                      ) : (
-                        userData.user.name?.charAt(0).toUpperCase() || "?"
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-lg">{userData.user.name}</p>
-                      <p className="text-gray-200 text-sm">{userData.user.email}</p>
-                      <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-cyan-500/30 rounded-full border border-cyan-400/50">
-                        <span className="text-xs text-cyan-200 font-medium">{userData.user.role}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button 
-                  className="flex items-center gap-4 py-4 px-5 hover:bg-white/10 rounded-2xl transition-all duration-300 group"
-                  onClick={() => { navigate("/profile"); setIsMobileMenuOpen(false); }}
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                    <FaUser className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-medium">My Profile</span>
-                </button>
-
-                <button 
-                  className="flex items-center gap-4 py-4 px-5 hover:bg-white/10 rounded-2xl transition-all duration-300 group"
-                  onClick={() => { 
-                    if (userData?.user?.role === "educator") {
-                      navigate("/courses"); 
-                    } else {
-                      navigate("/allcourses"); 
+              <div style={{ position: "relative" }} ref={dropdownRef}>
+                <div className="nav-avatar-wrap" onClick={() => setShowDropdown(p => !p)}>
+                  <div className="nav-avatar">
+                    {userData.user.photoUrl
+                      ? <img src={userData.user.photoUrl} alt="avatar" />
+                      : userData.user.name?.charAt(0).toUpperCase()
                     }
-                    setIsMobileMenuOpen(false); 
-                  }}
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                    <FaBook className="w-5 h-5 text-white" />
                   </div>
-                  <span className="font-medium">All Courses</span>
-                </button>
+                  <div className="nav-online" />
+                </div>
 
-                <button 
-                  className="flex items-center gap-4 py-4 px-5 border border-red-400/40 text-red-300 rounded-2xl text-center 
-                             bg-red-500/20 hover:bg-red-500/30 transition-all duration-300 mt-4 group hover:scale-105"
-                  onClick={handleLogout}
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                    <FaSignOutAlt className="w-5 h-5 text-white" />
+                {showDropdown && (
+                  <div className="nav-dropdown">
+                    <div className="nav-dropdown-header">
+                      <div className="nav-dropdown-name">{userData.user.name}</div>
+                      <div className="nav-dropdown-email">{userData.user.email}</div>
+                      <span className="nav-dropdown-role">{userData.user.role}</span>
+                    </div>
+                    <button className="nav-dropdown-item" onClick={() => { navigate("/profile"); setShowDropdown(false); }}>
+                      <FaUser /> My Profile
+                    </button>
+                    <button className="nav-dropdown-item" onClick={() => {
+                      navigate(isEducator ? "/courses" : "/allcourses");
+                      setShowDropdown(false);
+                    }}>
+                      <FaBook /> {isEducator ? "My Courses" : "All Courses"}
+                    </button>
                   </div>
-                  <span className="font-medium">Sign Out</span>
-                </button>
-              </>
-            ) : (
-              <button 
-                className="py-4 px-5 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-2xl text-center 
-                           shadow-2xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-105 border border-cyan-400/30 font-semibold"
-                onClick={() => { navigate("/login"); setIsMobileMenuOpen(false); }}
-              >
-                Get Started
+                )}
+              </div>
+            </>
+          ) : (
+            <button className="nav-btn-cta" onClick={() => navigate("/login")}>
+              Get Started
+            </button>
+          )}
+        </div>
+
+        {/* Mobile toggle */}
+        <button className="nav-mobile-btn" onClick={() => setMobileOpen(p => !p)}>
+          {mobileOpen ? <IoClose /> : <IoMenu />}
+        </button>
+      </nav>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="nav-mobile-menu">
+          {userData && (
+            <div className="nav-mobile-user">
+              <div className="nav-mobile-avatar">
+                {userData.user.photoUrl
+                  ? <img src={userData.user.photoUrl} alt="avatar" />
+                  : userData.user.name?.charAt(0).toUpperCase()
+                }
+              </div>
+              <div>
+                <div className="nav-mobile-name">{userData.user.name}</div>
+                <div className="nav-mobile-role">{userData.user.role}</div>
+              </div>
+            </div>
+          )}
+
+          {isStudent && (
+            <button className="nav-mobile-item" onClick={() => { navigate("/mycourses"); setMobileOpen(false); }}>
+              <FaGraduationCap size={13} /> My Learning
+            </button>
+          )}
+          {isEducator && (
+            <button className="nav-mobile-item" onClick={() => { navigate("/dashboard"); setMobileOpen(false); }}>
+              <FaChalkboardTeacher size={13} /> Dashboard
+            </button>
+          )}
+
+          {userData ? (
+            <>
+              <button className="nav-mobile-item" onClick={() => { navigate("/profile"); setMobileOpen(false); }}>
+                <FaUser size={13} /> My Profile
               </button>
-            )}
-          </div>
+              <button className="nav-mobile-item" onClick={() => {
+                navigate(isEducator ? "/courses" : "/allcourses");
+                setMobileOpen(false);
+              }}>
+                <FaBook size={13} /> {isEducator ? "My Courses" : "All Courses"}
+              </button>
+              <button className="nav-mobile-item danger" onClick={handleLogout}>
+                <FaSignOutAlt size={13} /> Sign Out
+              </button>
+            </>
+          ) : (
+            <button className="nav-mobile-item cta" onClick={() => { navigate("/login"); setMobileOpen(false); }}>
+              Get Started
+            </button>
+          )}
         </div>
       )}
-
-      {/* Custom CSS */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(180deg); }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-      `}</style>
-    </nav>
+    </>
   );
 };
 

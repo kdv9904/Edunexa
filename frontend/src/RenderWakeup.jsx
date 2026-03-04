@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logo from "./assets/logo.png";
 
 const facts = [
   "The average person forgets 50% of new information within an hour of learning it.",
@@ -149,30 +150,29 @@ export default function RenderWakeup({ onReady }) {
           >
             {/* Book icon */}
             <div
-              style={{
-                width: "52px",
-                height: "52px",
-                background: "linear-gradient(135deg, #4f8ef7, #7c3aed)",
-                borderRadius: "14px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 8px 30px rgba(79,142,247,0.4)",
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 6.5C12 5.12 10.88 4 9.5 4H4v16h5.5c1.38 0 2.5-1.12 2.5-2.5V6.5z"
-                  fill="white"
-                  opacity="0.9"
-                />
-                <path
-                  d="M12 6.5C12 5.12 13.12 4 14.5 4H20v16h-5.5C13.12 20 12 18.88 12 17.5V6.5z"
-                  fill="white"
-                  opacity="0.6"
-                />
-              </svg>
-            </div>
+  style={{
+    width: "52px",
+    height: "52px",
+    background: "linear-gradient(135deg, #4f8ef7, #7c3aed)",
+    borderRadius: "14px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 8px 30px rgba(79,142,247,0.4)",
+    overflow: "hidden",   // ← add this
+  }}
+>
+  <img 
+    src={logo} 
+    alt="EduNexa" 
+    style={{ 
+      width: "100%", 
+      height: "100%", 
+      objectFit: "cover",   // or "contain" if you want full logo visible
+      borderRadius: "14px"
+    }} 
+  />
+</div>
             <span
               style={{
                 fontSize: "36px",

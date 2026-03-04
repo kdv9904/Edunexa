@@ -1,285 +1,247 @@
 import React, { useState } from 'react';
 import { 
-  SiViaplay 
-} from 'react-icons/si';
-import { 
   TbDeviceDesktopAnalytics 
 } from 'react-icons/tb';
 import { 
-  FaMobileAlt,
-  FaDatabase,
-  FaRobot,
-  FaPaintBrush,
-  FaChartLine,
-  FaShieldAlt,
-  FaCloud,
-  FaGamepad,
-  FaVideo,
-  FaMusic
+  FaMobileAlt, FaDatabase, FaRobot, FaPaintBrush,
+  FaChartLine, FaShieldAlt, FaCloud, FaGamepad,
+  FaVideo, FaMusic, FaBullhorn
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
-const ExploreCourses = () => {
-  const [activeCategory, setActiveCategory] = useState('all');
+const CATEGORIES = [
+  { id: 'web',       icon: <TbDeviceDesktopAnalytics />, title: "Web Development",     desc: "Full-stack development courses",          courses: 125, accent: "#3b82f6" },
+  { id: 'mobile',    icon: <FaMobileAlt />,              title: "Mobile Development",   desc: "iOS & Android app development",           courses: 89,  accent: "#10b981" },
+  { id: 'ai',        icon: <FaRobot />,                  title: "AI & Machine Learning",desc: "AI algorithms and ML models",             courses: 67,  accent: "#8b5cf6" },
+  { id: 'data',      icon: <FaDatabase />,               title: "Data Science",         desc: "Data analysis and visualization",         courses: 94,  accent: "#f59e0b" },
+  { id: 'design',    icon: <FaPaintBrush />,             title: "UI/UX Design",         desc: "User interface and experience design",    courses: 78,  accent: "#ec4899" },
+  { id: 'business',  icon: <FaChartLine />,              title: "Business Analytics",   desc: "Data-driven business decisions",          courses: 56,  accent: "#6366f1" },
+  { id: 'cyber',     icon: <FaShieldAlt />,              title: "Cyber Security",       desc: "Network security & ethical hacking",      courses: 45,  accent: "#ef4444" },
+  { id: 'cloud',     icon: <FaCloud />,                  title: "Cloud Computing",      desc: "AWS, Azure, and Google Cloud",            courses: 72,  accent: "#14b8a6" },
+  { id: 'game',      icon: <FaGamepad />,                title: "Game Development",     desc: "2D/3D game design and development",       courses: 38,  accent: "#f97316" },
+  { id: 'video',     icon: <FaVideo />,                  title: "Video Editing",        desc: "Professional video production",           courses: 41,  accent: "#a855f7" },
+];
+
+const FILTERS = [
+  { id: 'all',      label: 'All' },
+  { id: 'web',      label: 'Web' },
+  { id: 'ai',       label: 'AI & ML' },
+  { id: 'data',     label: 'Data' },
+  { id: 'design',   label: 'Design' },
+  { id: 'business', label: 'Business' },
+  { id: 'cyber',    label: 'Security' },
+  { id: 'cloud',    label: 'Cloud' },
+];
+
+export default function ExploreCourses() {
+  const [active, setActive] = useState('all');
   const navigate = useNavigate();
 
-  const courseCategories = [
-    {
-      id: 'web',
-      icon: <TbDeviceDesktopAnalytics className="w-8 h-8" />,
-      title: "Web Development",
-      description: "Full-stack development courses",
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50",
-      borderColor: "border-blue-200",
-      courses: 125
-    },
-    {
-      id: 'mobile',
-      icon: <FaMobileAlt className="w-8 h-8" />,
-      title: "Mobile Development",
-      description: "iOS & Android app development",
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-gradient-to-br from-green-50 to-emerald-50",
-      borderColor: "border-green-200",
-      courses: 89
-    },
-    {
-      id: 'ai',
-      icon: <FaRobot className="w-8 h-8" />,
-      title: "AI & Machine Learning",
-      description: "AI algorithms and ML models",
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-gradient-to-br from-purple-50 to-pink-50",
-      borderColor: "border-purple-200",
-      courses: 67
-    },
-    {
-      id: 'data',
-      icon: <FaDatabase className="w-8 h-8" />,
-      title: "Data Science",
-      description: "Data analysis and visualization",
-      color: "from-orange-500 to-red-500",
-      bgColor: "bg-gradient-to-br from-orange-50 to-red-50",
-      borderColor: "border-orange-200",
-      courses: 94
-    },
-    {
-      id: 'design',
-      icon: <FaPaintBrush className="w-8 h-8" />,
-      title: "UI/UX Design",
-      description: "User interface and experience design",
-      color: "from-pink-500 to-rose-500",
-      bgColor: "bg-gradient-to-br from-pink-50 to-rose-50",
-      borderColor: "border-pink-200",
-      courses: 78
-    },
-    {
-      id: 'business',
-      icon: <FaChartLine className="w-8 h-8" />,
-      title: "Business Analytics",
-      description: "Data-driven business decisions",
-      color: "from-indigo-500 to-purple-500",
-      bgColor: "bg-gradient-to-br from-indigo-50 to-purple-50",
-      borderColor: "border-indigo-200",
-      courses: 56
-    },
-    {
-      id: 'cyber',
-      icon: <FaShieldAlt className="w-8 h-8" />,
-      title: "Cyber Security",
-      description: "Network security and ethical hacking",
-      color: "from-red-500 to-orange-500",
-      bgColor: "bg-gradient-to-br from-red-50 to-orange-50",
-      borderColor: "border-red-200",
-      courses: 45
-    },
-    {
-      id: 'cloud',
-      icon: <FaCloud className="w-8 h-8" />,
-      title: "Cloud Computing",
-      description: "AWS, Azure, and Google Cloud",
-      color: "from-teal-500 to-cyan-500",
-      bgColor: "bg-gradient-to-br from-teal-50 to-cyan-50",
-      borderColor: "border-teal-200",
-      courses: 72
-    },
-    {
-      id: 'game',
-      icon: <FaGamepad className="w-8 h-8" />,
-      title: "Game Development",
-      description: "2D/3D game design and development",
-      color: "from-amber-500 to-yellow-500",
-      bgColor: "bg-gradient-to-br from-amber-50 to-yellow-50",
-      borderColor: "border-amber-200",
-      courses: 38
-    },
-    {
-      id: 'video',
-      icon: <FaVideo className="w-8 h-8" />,
-      title: "Video Editing",
-      description: "Professional video production",
-      color: "from-violet-500 to-purple-500",
-      bgColor: "bg-gradient-to-br from-violet-50 to-purple-50",
-      borderColor: "border-violet-200",
-      courses: 41
-    },
-    {
-      id: 'music',
-      icon: <FaMusic className="w-8 h-8" />,
-      title: "Music Production",
-      description: "Audio engineering and production",
-      color: "from-emerald-500 to-green-500",
-      bgColor: "bg-gradient-to-br from-emerald-50 to-green-50",
-      borderColor: "border-emerald-200",
-      courses: 29
-    },
-    {
-      id: 'marketing',
-      icon: <SiViaplay className="w-8 h-8" />,
-      title: "Digital Marketing",
-      description: "SEO, Social Media, and Analytics",
-      color: "from-rose-500 to-pink-500",
-      bgColor: "bg-gradient-to-br from-rose-50 to-pink-50",
-      borderColor: "border-rose-200",
-      courses: 63
-    }
-  ];
-
-  const filteredCourses = activeCategory === 'all' 
-    ? courseCategories 
-    : courseCategories.filter(course => course.id === activeCategory);
+  const visible = active === 'all'
+    ? CATEGORIES
+    : CATEGORIES.filter(c => c.id === active);
 
   return (
-    <div className="w-full min-h-screen py-20 bg-gradient-to-br from-white via-gray-50 to-cyan-50 relative overflow-hidden">
-      {/* Subtle Background Elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
+    <>
+      <style>{`
+        .ec-root {
+          background: #07090f;
+          padding: 30px 24px;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .ec-inner { max-width: 1160px; margin: 0 auto; }
 
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-12 mb-16">
-          {/* Left Content */}
-          <div className="flex-1 max-w-2xl">
-            <div className="mb-6">
-              <span className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                Discover Your Path
-              </span>
-              <h2 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mt-2">
-                Explore Our <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI-Powered</span> Courses
-              </h2>
-            </div>
-            
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg mb-8 hover:shadow-xl transition-all duration-300">
-              <p className="text-lg text-gray-600 leading-relaxed">
-                Dive into our comprehensive curriculum powered by artificial intelligence. 
-                Get personalized course recommendations, real-time progress tracking, and 
-                adaptive learning paths tailored to your goals and learning style.
-              </p>
-            </div>
+        /* Header row */
+        .ec-header {
+          display: flex; flex-direction: column;
+          align-items: flex-start; gap: 32px;
+          margin-bottom: 48px;
+        }
+        @media (min-width: 900px) {
+          .ec-header { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+        }
+        .ec-eyebrow {
+          font-size: 11px; font-weight: 600; color: #10b981;
+          letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+        }
+        .ec-title {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(28px, 4vw, 44px); font-weight: 700;
+          color: #fff; line-height: 1.15; margin-bottom: 14px;
+        }
+        .ec-title em { color: #10b981; font-style: italic; }
+        .ec-sub { font-size: 14px; color: rgba(255,255,255,.4); line-height: 1.7; max-width: 420px; }
 
-            {/* Stats */}
-            <div className="flex flex-wrap gap-6 mb-8">
-              {[
-                { number: "500+", label: "Expert Courses", gradient: "from-blue-500 to-cyan-500" },
-                { number: "50+", label: "Categories", gradient: "from-purple-500 to-pink-500" },
-                { number: "10K+", label: "Happy Students", gradient: "from-orange-500 to-red-500" },
-                { number: "24/7", label: "AI Support", gradient: "from-green-500 to-emerald-500" }
-              ].map((stat, index) => (
-                <div key={index} className="text-center p-4 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-                  <div className={`text-2xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent`}>{stat.number}</div>
-                  <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </div>
+        .ec-cta-btn {
+          flex-shrink: 0;
+          padding: 13px 28px; border-radius: 12px;
+          background: #10b981; color: #07090f;
+          border: none; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+          display: flex; align-items: center; gap: 8px;
+          transition: background .2s, transform .15s, box-shadow .2s;
+          white-space: nowrap;
+        }
+        .ec-cta-btn:hover { background: #0ea472; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(16,185,129,.3); }
 
-            {/* CTA Button */}
-            <button 
-              onClick={() => navigate("/allcourses")}
-              className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-              <span className="relative z-10 flex items-center gap-3">
-                Explore All Courses
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
+        /* Filter tabs */
+        .ec-filters {
+          display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 36px;
+        }
+        .ec-filter {
+          padding: 7px 18px; border-radius: 100px;
+          background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+          color: rgba(255,255,255,.45); font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: all .2s;
+        }
+        .ec-filter:hover { border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.8); }
+        .ec-filter.active {
+          background: #10b981; border-color: #10b981;
+          color: #07090f; font-weight: 700;
+        }
+
+        /* Grid */
+        .ec-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+        /* Card */
+        .ec-card {
+          position: relative;
+          background: rgba(255,255,255,.03);
+          border: 1px solid rgba(255,255,255,.07);
+          border-radius: 18px; padding: 26px 22px;
+          cursor: pointer;
+          transition: border-color .3s, transform .3s, background .3s;
+          overflow: hidden;
+        }
+        .ec-card::before {
+          content: '';
+          position: absolute; inset: 0; border-radius: 18px;
+          background: var(--accent-color);
+          opacity: 0; transition: opacity .3s;
+        }
+        .ec-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
+        .ec-card:hover::before { opacity: .05; }
+
+        .ec-card-icon {
+          width: 48px; height: 48px; border-radius: 12px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 20px; color: #fff; margin-bottom: 16px;
+          background: var(--accent-color);
+          opacity: .9;
+          transition: transform .3s;
+        }
+        .ec-card:hover .ec-card-icon { transform: scale(1.1); }
+
+        .ec-card-title {
+          font-size: 14px; font-weight: 700; color: #fff;
+          margin-bottom: 6px; line-height: 1.3;
+        }
+        .ec-card-desc {
+          font-size: 12px; color: rgba(255,255,255,.35);
+          line-height: 1.6; margin-bottom: 16px;
+        }
+        .ec-card-footer {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .ec-card-count {
+          font-size: 11px; font-weight: 600;
+          color: var(--accent-color);
+          background: rgba(255,255,255,.06);
+          padding: 3px 10px; border-radius: 100px;
+        }
+        .ec-card-arrow {
+          width: 26px; height: 26px; border-radius: 50%;
+          border: 1px solid rgba(255,255,255,.1);
+          display: flex; align-items: center; justify-content: center;
+          color: rgba(255,255,255,.3); font-size: 11px;
+          transition: all .2s;
+        }
+        .ec-card:hover .ec-card-arrow {
+          border-color: var(--accent-color);
+          color: var(--accent-color);
+          background: rgba(255,255,255,.04);
+        }
+
+        /* Bottom strip */
+        .ec-bottom {
+          margin-top: 48px; text-align: center;
+          display: flex; flex-direction: column; align-items: center; gap: 14px;
+        }
+        .ec-count-line { font-size: 13px; color: rgba(255,255,255,.3); }
+        .ec-count-line strong { color: rgba(255,255,255,.6); }
+        .ec-view-all {
+          padding: 11px 28px; border-radius: 12px;
+          background: transparent; border: 1.5px solid rgba(255,255,255,.12);
+          color: rgba(255,255,255,.6); font-family: 'DM Sans', sans-serif;
+          font-size: 13px; font-weight: 600; cursor: pointer;
+          transition: border-color .2s, color .2s, background .2s;
+        }
+        .ec-view-all:hover { border-color: #10b981; color: #10b981; background: rgba(16,185,129,.05); }
+      `}</style>
+
+      <div className="ec-root">
+        <div className="ec-inner">
+
+          {/* Header */}
+          <div className="ec-header">
+            <div>
+              <div className="ec-eyebrow">Explore Categories</div>
+              <h2 className="ec-title">Find your next<br /><em>skill to master.</em></h2>
+              <p className="ec-sub">1,200+ courses across 12 domains — from code to creativity, taught by real practitioners.</p>
+            </div>
+            <button className="ec-cta-btn" onClick={() => navigate("/allcourses")}>
+              Browse All Courses <span style={{ fontSize: 16 }}>→</span>
             </button>
           </div>
 
-          {/* Category Filter */}
-          <div className="lg:w-80">
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Filter by Category</h3>
-              <div className="space-y-2">
-                {['all', 'web', 'ai', 'data', 'design', 'business', 'cyber', 'cloud'].map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setActiveCategory(category)}
-                    className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 ${
-                      activeCategory === category
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md border border-blue-500/20'
-                        : 'bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border border-gray-200 hover:border-blue-200'
-                    }`}
-                  >
-                    {category === 'all' ? 'All Categories' : courseCategories.find(c => c.id === category)?.title}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Filters */}
+          <div className="ec-filters">
+            {FILTERS.map(f => (
+              <button
+                key={f.id}
+                className={`ec-filter${active === f.id ? ' active' : ''}`}
+                onClick={() => setActive(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
-        </div>
 
-        {/* Courses Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCourses.map((course, index) => (
-            <div
-              key={course.id}
-              className={`group relative p-6 rounded-2xl ${course.bgColor} border ${course.borderColor} shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105`}
-            >
-              {/* Background Gradient on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${course.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-500`}></div>
-              
-              {/* Icon */}
-              <div className={`relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-br ${course.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                {course.icon}
+          {/* Grid */}
+          <div className="ec-grid">
+            {visible.map(c => (
+              <div
+                key={c.id}
+                className="ec-card"
+                style={{ '--accent-color': c.accent }}
+                onClick={() => navigate("/allcourses")}
+              >
+                <div className="ec-card-icon" style={{ background: c.accent }}>{c.icon}</div>
+                <div className="ec-card-title">{c.title}</div>
+                <div className="ec-card-desc">{c.desc}</div>
+                <div className="ec-card-footer">
+                  <span className="ec-card-count">{c.courses} courses</span>
+                  <div className="ec-card-arrow">→</div>
+                </div>
               </div>
+            ))}
+          </div>
 
-              {/* Content */}
-              <h3 className="text-xl font-semibold text-gray-800 mb-2 group-hover:text-gray-900 transition-colors">
-                {course.title}
-              </h3>
-              <p className="text-gray-600 text-sm mb-4 leading-relaxed group-hover:text-gray-700 transition-colors">
-                {course.description}
-              </p>
+          {/* Bottom */}
+          <div className="ec-bottom">
+            <p className="ec-count-line">Showing <strong>{visible.length}</strong> of <strong>{CATEGORIES.length}</strong> categories</p>
+            <button className="ec-view-all" onClick={() => navigate("/allcourses")}>
+              View All Categories
+            </button>
+          </div>
 
-              {/* Course Count */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 font-medium group-hover:text-gray-600 transition-colors">
-                  {course.courses} courses
-                </span>
-                <div className={`w-2 h-2 bg-gradient-to-r ${course.color} rounded-full group-hover:scale-150 transition-transform duration-300`}></div>
-              </div>
-
-              {/* Hover Effect Line */}
-              <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-1 bg-gradient-to-r ${course.color} group-hover:w-3/4 transition-all duration-500 rounded-full`}></div>
-            </div>
-          ))}
-        </div>
-
-        {/* View More */}
-        <div className="text-center mt-12">
-          <button 
-            onClick={() => navigate("/allcourses")}
-            className="px-8 py-4 border-2 border-blue-500 text-blue-500 rounded-2xl font-semibold bg-white hover:bg-blue-500 hover:text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
-            View All Categories
-          </button>
         </div>
       </div>
-    </div>
+    </>
   );
-};
-
-export default ExploreCourses;
+}

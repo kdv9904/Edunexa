@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
-import logo from '../assets/logo.jpg'
-import google from '../assets/google.jpg'
-import { FaEye, FaEyeSlash, FaGoogle, FaLock, FaEnvelope, FaRocket } from "react-icons/fa";
+import React, { useState, useEffect } from 'react'
+import logo from '../assets/logo.png'
+import { FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { serverUrl } from '../App';
@@ -12,246 +11,400 @@ import { setUserData } from '../redux/userSlice';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, provider } from '../utils/firebase';
 
-const Login = () => {
+const STATS = [
+  { value: "50K+", label: "Students Enrolled" },
+  { value: "1,200+", label: "Expert Courses" },
+  { value: "98%", label: "Satisfaction Rate" },
+];
+
+const TESTIMONIALS = [
+  { text: "EduNexa helped me switch careers in 6 months.", name: "Priya S.", role: "UX Designer" },
+  { text: "The best structured learning platform I've used.", name: "Kirtan V.", role: "Developer" },
+  { text: "My team's productivity doubled after upskilling here.", name: "Sara K.", role: "Team Lead" },
+];
+
+export default function Login() {
   const [show, setShow] = useState(false);
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    setMounted(true);
+    const t = setInterval(() => setTestimonialIdx(i => (i + 1) % TESTIMONIALS.length), 4000);
+    return () => clearInterval(t);
+  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const result = await axios.post(serverUrl + "/api/auth/login", {
-        email, password
-      }, {
-        withCredentials: true
-      });
+      const result = await axios.post(serverUrl + "/api/auth/login", { email, password }, { withCredentials: true });
       dispatch(setUserData(result.data));
       setLoading(false);
       navigate("/");
       toast.success("Login Successful");
     } catch (err) {
-      console.log(err);
       setLoading(false);
       toast.error(err.response?.data?.message || "Login failed");
     }
-  }
+  };
 
   const googleLogin = async () => {
     try {
       const response = await signInWithPopup(auth, provider);
-      let user = response.user;
-      let name = user.displayName;
-      let email = user.email;
-      let role = ""
-      const result = await axios.post(serverUrl + "/api/auth/googleauth", {
-        name,
-        email,
-        role
-      }, {
-        withCredentials: true
-      });
+      const { displayName: name, email } = response.user;
+      const result = await axios.post(serverUrl + "/api/auth/googleauth", { name, email, role: "" }, { withCredentials: true });
       dispatch(setUserData(result.data));
       toast.success("Google Login Successful");
       navigate("/");
-
     } catch (error) {
-      console.error("Google Login Error:", error.code, error.message);
-
       if (error.code !== "auth/popup-closed-by-user") {
         toast.error("Google sign in failed: " + error.message);
       }
     }
   };
 
+  const t = TESTIMONIALS[testimonialIdx];
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 px-4 relative overflow-hidden">
-      
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-pink-500/5 rounded-full blur-2xl"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${8 + Math.random() * 8}s`
-            }}
-          />
-        ))}
-      </div>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      <div className="relative z-10 w-full max-w-4xl flex items-center justify-center">
-        {/* Main Container - Made Smaller */}
-        <div className="bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden w-full max-w-3xl">
-          <div className="flex flex-col md:flex-row">
-            {/* Left Side - Login Form - Made More Compact */}
-            <div className="w-full md:w-1/2 p-6 md:p-8">
-              {/* Header */}
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <FaRocket className="w-5 h-5 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">
-                  Welcome Back
-                </h1>
-                <p className="text-gray-200 text-xs">
-                  Login to continue your learning journey
-                </p>
+        .en-root {
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          font-family: 'DM Sans', sans-serif;
+          background: #0c0f1a;
+        }
+        @media (max-width: 820px) {
+          .en-root { grid-template-columns: 1fr; }
+          .en-left  { display: none; }
+          .en-right { min-height: 100vh; }
+        }
+
+        /* ── LEFT PANEL ── */
+        .en-left {
+          position: relative;
+          background: #0c0f1a;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 52px 52px 44px;
+          overflow: hidden;
+        }
+        .en-left-bg {
+          position: absolute; inset: 0; z-index: 0;
+          background:
+            radial-gradient(ellipse 60% 50% at 80% 10%, rgba(16,185,129,.12) 0%, transparent 60%),
+            radial-gradient(ellipse 50% 60% at 10% 90%, rgba(99,102,241,.14) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 40% at 60% 55%, rgba(245,158,11,.06) 0%, transparent 60%);
+        }
+        .en-grid {
+          position: absolute; inset: 0; z-index: 0; opacity: .035;
+          background-image:
+            linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+          background-size: 48px 48px;
+        }
+
+        .en-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; }
+        .en-brand-logo {
+          width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+          border: 1px solid rgba(255,255,255,.12);
+        }
+        .en-brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .en-brand-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 22px; font-weight: 700;
+          color: #fff; letter-spacing: -.3px;
+        }
+        .en-brand-name span { color: #10b981; }
+
+        .en-hero { position: relative; z-index: 1; }
+        .en-tag {
+          display: inline-flex; align-items: center; gap: 7px;
+          background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25);
+          padding: 5px 14px; border-radius: 100px; margin-bottom: 24px;
+        }
+        .en-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: blink 1.8s ease infinite; }
+        .en-tag span { font-size: 11px; font-weight: 500; color: #10b981; letter-spacing: 1px; text-transform: uppercase; }
+        .en-headline {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(32px, 3.5vw, 46px); font-weight: 700;
+          color: #fff; line-height: 1.2; margin-bottom: 18px;
+        }
+        .en-headline em { color: #10b981; font-style: normal; }
+        .en-sub { font-size: 15px; color: rgba(255,255,255,.45); line-height: 1.7; max-width: 340px; }
+
+        .en-stats { display: flex; gap: 32px; position: relative; z-index: 1; }
+        .en-stat-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #fff; }
+        .en-stat-lbl { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; }
+
+        .en-testimonial {
+          position: relative; z-index: 1;
+          background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+          border-radius: 16px; padding: 22px 24px;
+          transition: opacity .5s ease;
+        }
+        .en-quote { font-size: 13.5px; color: rgba(255,255,255,.7); line-height: 1.65; margin-bottom: 14px; font-style: italic; }
+        .en-author { display: flex; align-items: center; gap: 10px; }
+        .en-avatar {
+          width: 34px; height: 34px; border-radius: 50%;
+          background: linear-gradient(135deg, #10b981, #6366f1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; font-weight: 600; color: #fff;
+        }
+        .en-author-name { font-size: 13px; font-weight: 600; color: #fff; }
+        .en-author-role { font-size: 11px; color: rgba(255,255,255,.35); }
+        .en-dots { display: flex; gap: 5px; margin-top: 14px; }
+        .en-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.2); transition: all .3s; }
+        .en-dot.active { background: #10b981; width: 16px; border-radius: 100px; }
+
+        /* ── RIGHT PANEL ── */
+        .en-right {
+          background: #f7f8fa;
+          display: flex; align-items: center; justify-content: center;
+          padding: 48px 32px;
+        }
+        .en-card {
+          width: 100%; max-width: 400px;
+          opacity: 0; transform: translateY(24px);
+          transition: opacity .7s ease, transform .7s ease;
+        }
+        .en-card.visible { opacity: 1; transform: translateY(0); }
+
+        .en-form-header { margin-bottom: 32px; }
+        .en-form-eyebrow { font-size: 11px; font-weight: 600; color: #10b981; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .en-form-title { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: #0c0f1a; line-height: 1.2; }
+        .en-form-sub { font-size: 13.5px; color: #8b909a; margin-top: 6px; }
+
+        .en-field { margin-bottom: 18px; }
+        .en-label {
+          display: block; font-size: 12px; font-weight: 600;
+          color: #3d4152; letter-spacing: .4px; margin-bottom: 7px; text-transform: uppercase;
+        }
+        .en-input-wrap { position: relative; }
+        .en-input {
+          width: 100%; padding: 12px 16px;
+          background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px;
+          font-size: 14px; color: #0c0f1a; font-family: 'DM Sans', sans-serif;
+          outline: none; transition: border-color .25s, box-shadow .25s;
+        }
+        .en-input::placeholder { color: #c1c5ce; }
+        .en-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
+        .en-eye {
+          position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer; color: #a0a5b2;
+          display: flex; align-items: center; transition: color .2s;
+        }
+        .en-eye:hover { color: #10b981; }
+        .en-forgot {
+          text-align: right; margin-top: 6px;
+          font-size: 12px; font-weight: 500; color: #10b981; cursor: pointer;
+          background: none; border: none;
+        }
+        .en-forgot:hover { text-decoration: underline; }
+
+        .en-btn-primary {
+          width: 100%; padding: 13.5px;
+          background: #0c0f1a; color: #fff;
+          border: none; border-radius: 12px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+          letter-spacing: .3px; position: relative; overflow: hidden;
+          transition: background .25s, transform .15s, box-shadow .25s;
+          margin-top: 6px;
+        }
+        .en-btn-primary:hover:not(:disabled) {
+          background: #1a1f35;
+          box-shadow: 0 8px 24px rgba(12,15,26,.25);
+          transform: translateY(-1px);
+        }
+        .en-btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .en-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+        .en-btn-primary .shine {
+          position: absolute; inset: 0;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.08) 50%, transparent 60%);
+          transform: translateX(-100%);
+          transition: transform .6s ease;
+        }
+        .en-btn-primary:hover .shine { transform: translateX(100%); }
+
+        .en-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+        .en-divider-line { flex: 1; height: 1px; background: #e5e7eb; }
+        .en-divider span { font-size: 11px; color: #b0b5c1; font-weight: 500; white-space: nowrap; }
+
+        .en-btn-google {
+          width: 100%; padding: 12px;
+          background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; cursor: pointer;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+          color: #3d4152; display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
+        }
+        .en-btn-google:hover {
+          border-color: #d1d5db; background: #fafafa;
+          box-shadow: 0 2px 12px rgba(0,0,0,.06); transform: translateY(-1px);
+        }
+        .en-google-icon { color: #ea4335; font-size: 16px; }
+
+        .en-signup { text-align: center; margin-top: 22px; font-size: 13px; color: #8b909a; }
+        .en-signup button {
+          background: none; border: none; cursor: pointer;
+          color: #10b981; font-weight: 600; font-family: 'DM Sans', sans-serif;
+          font-size: 13px; margin-left: 4px;
+        }
+        .en-signup button:hover { text-decoration: underline; }
+
+        .en-trust { display: flex; align-items: center; gap: 8px; margin-top: 28px; justify-content: center; }
+        .en-trust-dot { width: 5px; height: 5px; border-radius: 50%; background: #10b981; }
+        .en-trust span { font-size: 11px; color: #b0b5c1; }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: .3; }
+        }
+      `}</style>
+
+      <div className="en-root">
+
+        {/* ── LEFT PANEL ── */}
+        <div className="en-left">
+          <div className="en-left-bg" />
+          <div className="en-grid" />
+
+          {/* Brand */}
+          <div className="en-brand">
+            <div className="en-brand-logo"><img src={logo} alt="EduNexa" /></div>
+            <div className="en-brand-name">Edu<span>nexa</span></div>
+          </div>
+
+          {/* Hero copy */}
+          <div className="en-hero">
+            <div className="en-tag">
+              <div className="en-tag-dot" />
+              <span>AI-Powered Learning</span>
+            </div>
+            <h1 className="en-headline">
+              Learn Without<br /><em>Limits.</em>
+            </h1>
+            <p className="en-sub">
+              Access world-class courses, expert instructors, and a community of learners who push each other forward.
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="en-stats">
+            {STATS.map(s => (
+              <div key={s.label}>
+                <div className="en-stat-val">{s.value}</div>
+                <div className="en-stat-lbl">{s.label}</div>
               </div>
+            ))}
+          </div>
 
-              {/* Login Form */}
-              <form className="space-y-4" onSubmit={(e) => {e.preventDefault(); handleLogin();}}>
-                {/* Email Input */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-200 mb-1 flex items-center gap-2">
-                    <FaEnvelope className="w-3 h-3 text-cyan-400" />
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-all duration-300 group-hover:border-cyan-300 text-sm"
-                    placeholder="Enter your email address"
-                    onChange={(e) => setEmail(e.target.value)}
-                    value={email}
-                  />
-                </div>
-
-                {/* Password Input */}
-                <div className="group">
-                  <label className="block text-sm font-medium text-gray-200 mb-1 flex items-center gap-2">
-                    <FaLock className="w-3 h-3 text-purple-400" />
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={show ? "text" : "password"}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-all duration-300 group-hover:border-purple-300 pr-10 text-sm"
-                      placeholder="Enter your password"
-                      onChange={(e) => setPassword(e.target.value)}
-                      value={password}
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
-                      onClick={() => setShow(prev => !prev)}
-                    >
-                      {show ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Forgot Password */}
-                <div className="text-right">
-                  <button
-                    className="text-cyan-300 hover:text-cyan-200 text-xs transition-colors duration-200"
-                    onClick={() => navigate('/forget-password')}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-
-                {/* Login Button */}
-                <button
-                  className="group relative w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-2.5 px-4 rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
-                  onClick={handleLogin}
-                  disabled={loading}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  <span className="relative flex items-center justify-center gap-2">
-                    {loading ? <ClipLoader size={16} color="white" /> : "Login to Account"}
-                  </span>
-                </button>
-              </form>
-
-              {/* Divider */}
-              <div className="flex items-center my-4">
-                <div className="flex-1 h-px bg-white/20"></div>
-                <span className="px-3 text-xs text-gray-300">or continue with</span>
-                <div className="flex-1 h-px bg-white/20"></div>
-              </div>
-
-              {/* Google Login */}
-              <button
-                className="group w-full flex items-center justify-center gap-2 py-2 px-4 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 text-sm"
-                onClick={googleLogin}
-              >
-                <FaGoogle className="w-4 h-4 text-red-400" />
-                <span className="font-medium">Login with Google</span>
-              </button>
-
-              {/* Sign Up Link */}
-              <div className="text-center mt-4">
-                <p className="text-gray-300 text-xs">
-                  Don't have an account?{" "}
-                  <button
-                    className="text-cyan-300 hover:text-cyan-200 font-semibold transition-colors duration-200"
-                    onClick={() => navigate('/signup')}
-                  >
-                    Sign Up
-                  </button>
-                </p>
+          {/* Testimonial */}
+          <div className="en-testimonial" key={testimonialIdx}>
+            <p className="en-quote">"{t.text}"</p>
+            <div className="en-author">
+              <div className="en-avatar">{t.name[0]}</div>
+              <div>
+                <div className="en-author-name">{t.name}</div>
+                <div className="en-author-role">{t.role}</div>
               </div>
             </div>
+            <div className="en-dots">
+              {TESTIMONIALS.map((_, i) => (
+                <div key={i} className={`en-dot${i === testimonialIdx ? " active" : ""}`} />
+              ))}
+            </div>
+          </div>
+        </div>
 
-            {/* Right Side - Brand Section - Made More Compact */}
-            <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-pink-500/20 backdrop-blur-xl border-l border-white/20 flex-col items-center justify-center p-6 text-white relative overflow-hidden">
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-400 rounded-full blur-xl"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-400 rounded-full blur-xl"></div>
-              </div>
+        {/* ── RIGHT PANEL ── */}
+        <div className="en-right">
+          <div className={`en-card${mounted ? " visible" : ""}`}>
 
-              {/* Content */}
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg border border-white/20">
-                  <img
-                    src={logo}
-                    alt="logo"
-                    className="w-15 h-15 rounded-lg object-cover"
+            <div className="en-form-header">
+              <div className="en-form-eyebrow">Welcome back</div>
+              <h2 className="en-form-title">Sign in to<br />your account</h2>
+              <p className="en-form-sub">Continue your learning journey where you left off.</p>
+            </div>
+
+            <form onSubmit={e => { e.preventDefault(); handleLogin(); }}>
+              {/* Email */}
+              <div className="en-field">
+                <label className="en-label">Email Address</label>
+                <div className="en-input-wrap">
+                  <input
+                    className="en-input"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
                   />
                 </div>
-                <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                  AI LMS
-                </h2>
-                <p className="text-gray-200 text-sm mb-4 max-w-xs">
-                  Transform your learning experience with AI-powered courses.
-                </p>
-                <div className="flex items-center justify-center gap-2 text-cyan-300">
-                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs">Join 10,000+ learners worldwide</span>
-                </div>
               </div>
+
+              {/* Password */}
+              <div className="en-field">
+                <label className="en-label">Password</label>
+                <div className="en-input-wrap">
+                  <input
+                    className="en-input"
+                    type={show ? "text" : "password"}
+                    placeholder="Enter your password"
+                    style={{ paddingRight: 42 }}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                  />
+                  <button type="button" className="en-eye" onClick={() => setShow(p => !p)}>
+                    {show ? <FaEyeSlash size={15} /> : <FaEye size={15} />}
+                  </button>
+                </div>
+                <button type="button" className="en-forgot" onClick={() => navigate('/forget-password')}>
+                  Forgot password?
+                </button>
+              </div>
+
+              {/* Submit */}
+              <button className="en-btn-primary" type="submit" disabled={loading}>
+                <div className="shine" />
+                <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  {loading ? <ClipLoader size={16} color="#fff" /> : "Sign In"}
+                </span>
+              </button>
+            </form>
+
+            <div className="en-divider">
+              <div className="en-divider-line" />
+              <span>or continue with</span>
+              <div className="en-divider-line" />
+            </div>
+
+            <button className="en-btn-google" onClick={googleLogin}>
+              <FaGoogle className="en-google-icon" />
+              Continue with Google
+            </button>
+
+            <div className="en-signup">
+              Don't have an account?
+              <button onClick={() => navigate('/signup')}>Create one free</button>
+            </div>
+
+            <div className="en-trust">
+              <div className="en-trust-dot" />
+              <span>Secured with 256-bit SSL encryption</span>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Custom CSS */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-15px) rotate(180deg); }
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
-  )
+    </>
+  );
 }
-
-export default Login
