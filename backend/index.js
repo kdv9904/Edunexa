@@ -15,7 +15,7 @@ const port = process.env.PORT || 8000;
 const app=express()
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({origin:"http://localhost:5173",
+app.use(cors({origin:"https://edunexa-1-mad5.onrender.com",
 credentials:true,
 }))
 

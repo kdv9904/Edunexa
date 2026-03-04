@@ -3,7 +3,7 @@ import logo from '../assets/logo.jpg';
 import { IoMenu, IoClose } from "react-icons/io5";
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
-import { serverUrl } from '../app';
+import { serverUrl } from '../App';
 import { setUserData } from '../redux/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaBook, FaSignOutAlt, FaChalkboardTeacher, FaGraduationCap } from 'react-icons/fa';

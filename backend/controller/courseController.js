@@ -1,4 +1,4 @@
-import Course from "../model/coursemodel.js";
+import Course from "../model/courseModel.js";
 import uploadOnCloudinary from '../config/cloudinary.js';
 import Lecture from "../model/lactureModel.js";
 import User from '../model/userModel.js';
