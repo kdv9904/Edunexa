@@ -142,7 +142,7 @@ const EditLecture = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600&display=swap');
         .el-input {
-          width: 100%; padding: 11px 16px; border-radius: 10px;
+          width: 100%; border-radius: 10px;
           background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
           color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif;
           outline: none; transition: border-color .2s; box-sizing: border-box;
