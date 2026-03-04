@@ -26,17 +26,22 @@ const EditLecture = () => {
   const [dragOver, setDragOver]             = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  useEffect(() => {
-    if (lectureData && lectureId) {
-      const lecture = lectureData.find(l => l._id === lectureId)
+  // Change to:
+useEffect(() => {
+  if (lectureData && lectureId) {
+    const lecture = lectureData.find(l => l._id === lectureId)
+    if (lecture) {
       setSelectedLecture(lecture)
-      if (lecture) {
-        setLectureTitle(lecture.lectureTitle || "")
-        setIsPreviewFree(lecture.isPreviewFree || false)
-      }
+      setLectureTitle(lecture.lectureTitle || "")
+      setIsPreviewFree(lecture.isPreviewFree || false)
+      setIsLoading(false)  // ← only stop loading when lecture is actually found
+    } else if (lectureData.length > 0) {
+      // Data has loaded but lecture genuinely doesn't exist
       setIsLoading(false)
     }
-  }, [lectureData, lectureId])
+    // If lectureData is still empty, keep showing the spinner
+  }
+}, [lectureData, lectureId])
 
   const handleBack = () => navigate(`/create-lecture/${courseId}`)
 
