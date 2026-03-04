@@ -7,22 +7,19 @@ import axios from 'axios';
 import { serverUrl } from './../../App';
 import { ClipLoader } from 'react-spinners';
 import { setLectureData } from "../../redux/lectureSlice";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaVideo } from "react-icons/fa";
 
 const CreateLecture = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const [lectureTitle, setLectureTitle] = useState("");
-  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const { lectureData } = useSelector(state => state.lecture);
 
-  const handleCreateLecture = async () => {
-    if (!lectureTitle.trim()) {
-      toast.error("Please enter a lecture title");
-      return;
-    }
+  const [lectureTitle, setLectureTitle] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const handleCreateLecture = async () => {
+    if (!lectureTitle.trim()) { toast.error("Please enter a lecture title"); return; }
     setLoading(true);
     try {
       const result = await axios.post(
@@ -31,18 +28,17 @@ const CreateLecture = () => {
         { withCredentials: true }
       );
       dispatch(setLectureData(result.data.lectures || []));
-      setLoading(false);
-      toast.success("🎉 Lecture Added Successfully");
+      toast.success("Lecture added successfully");
       setLectureTitle("");
     } catch (error) {
-      console.log(error);
       toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const getCourseLecture = async () => {
+    const fetchLectures = async () => {
       try {
         const result = await axios.get(
           serverUrl + `/api/course/courselecture/${courseId}`,
@@ -53,213 +49,187 @@ const CreateLecture = () => {
         console.log(error);
       }
     };
-    getCourseLecture();
+    fetchLectures();
   }, [courseId, dispatch]);
 
+  const count = lectureData?.length || 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4 sm:p-6 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${15 + Math.random() * 10}s`
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(`/editcourse/${courseId}`)}
-        className="absolute top-6 left-6 z-20 group cursor-pointer"
-      >
-        <div className="relative">
-          <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-2xl rotate-45 shadow-2xl transition-all duration-500 group-hover:rotate-90 group-hover:scale-110 flex items-center justify-center">
-            <FaArrowLeftLong className="w-5 h-5 text-white -rotate-45 transition-transform duration-500 group-hover:-rotate-90" />
-          </div>
-        </div>
-      </button>
-
-      <div className="relative z-10 flex items-center justify-center min-h-screen">
-        <div className="w-full max-w-2xl">
-          {/* Header */}
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
-              Create New Lecture
-            </h1>
-            <p className="text-gray-300">
-              Add engaging video lectures to enrich your course content
-            </p>
-          </div>
-
-          {/* Main Form Container */}
-          <div className="bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 md:p-8">
-            {/* Input Section */}
-            <div className="mb-8">
-              <label htmlFor="lectureTitle" className="block text-sm font-medium text-gray-300 mb-3">
-                Lecture Title *
-              </label>
-              <input
-                id="lectureTitle"
-                type="text"
-                className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300 hover:border-white/20"
-                placeholder="e.g. Introduction to MERN Stack - Building Modern Web Applications"
-                onChange={(e) => setLectureTitle(e.target.value)}
-                value={lectureTitle}
-                onKeyDown={(e) => e.key === 'Enter' && !loading && handleCreateLecture()}
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <button
-                className="flex items-center justify-center gap-2 px-5 py-3 bg-white/5 backdrop-blur-sm border border-white/10 text-gray-300 rounded-xl font-medium hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-300 hover:scale-105"
-                disabled={loading}
-                onClick={() => navigate(`/editcourse/${courseId}`)}
-              >
-                <FaArrowLeftLong /> Back to Course
-              </button>
-              <button
-                className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-xl font-semibold px-6 py-3 shadow-2xl hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                onClick={handleCreateLecture}
-                disabled={loading || !lectureTitle.trim()}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                <div className="relative flex items-center justify-center gap-2">
-                  {loading ? (
-                    <>
-                      <ClipLoader size={18} color="#ffffff" />
-                      <span>Creating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-lg">+</span>
-                      <span>Create Lecture</span>
-                    </>
-                  )}
-                </div>
-              </button>
-            </div>
-
-            {/* Lectures List */}
-            <div className="border-t border-white/10 pt-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-100">
-                  Existing Lectures <span className="text-cyan-400">({lectureData?.length || 0})</span>
-                </h2>
-                {lectureData?.length > 0 && (
-                  <span className="text-sm text-gray-400">
-                    Click edit icon to modify
-                  </span>
-                )}
-              </div>
-              
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                {Array.isArray(lectureData) && lectureData.length > 0 ? (
-                  lectureData.map((lecture, index) => (
-                    <div 
-                      key={lecture._id || index} 
-                      className="group bg-gradient-to-r from-white/5 to-white/3 backdrop-blur-sm rounded-xl p-4 flex justify-between items-center border border-white/10 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 text-white font-bold text-sm shadow-lg">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-100">
-                            {lecture.lectureTitle}
-                          </span>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Click edit to add video content
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => navigate(`/editlecture/${courseId}/${lecture._id}`)}
-                        className="p-3 rounded-xl bg-white/10 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 hover:text-cyan-400 transition-all duration-300 group-hover:scale-110"
-                        aria-label="Edit lecture"
-                      >
-                        <FaEdit className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-10">
-                    <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-600/20 flex items-center justify-center mb-5 border border-white/10">
-                      <span className="text-3xl">📚</span>
-                    </div>
-                    <p className="text-gray-400 text-lg font-medium">No lectures added yet</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Create your first lecture to get started
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Footer */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 backdrop-blur-sm rounded-2xl border border-cyan-500/20 p-4 text-center">
-              <div className="text-2xl font-bold text-cyan-400">{lectureData?.length || 0}</div>
-              <div className="text-sm text-gray-300">Total Lectures</div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 backdrop-blur-sm rounded-2xl border border-purple-500/20 p-4 text-center">
-              <div className="text-2xl font-bold text-purple-400">
-                {lectureData?.length > 0 ? lectureData.length : 0}
-              </div>
-              <div className="text-sm text-gray-300">Available</div>
-            </div>
-            <div className="bg-gradient-to-br from-pink-500/10 to-pink-500/5 backdrop-blur-sm rounded-2xl border border-pink-500/20 p-4 text-center">
-              <div className="text-2xl font-bold text-pink-400">0</div>
-              <div className="text-sm text-gray-300">In Progress</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Custom CSS */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
+        .cl-root {
+          min-height: 100vh; background: #07090f;
+          font-family: 'DM Sans', sans-serif;
+          position: relative; overflow-x: hidden;
+          padding: 48px 24px 72px;
         }
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
+        .cl-glow1 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.06) 0%, transparent 70%); top: -150px; right: -150px; pointer-events: none; z-index: 0; }
+        .cl-glow2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.05) 0%, transparent 70%); bottom: -100px; left: -100px; pointer-events: none; z-index: 0; }
+        .cl-grid { position: fixed; inset: 0; opacity: .022; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px); background-size: 56px 56px; }
 
-        /* Custom scrollbar */
-        .overflow-y-auto::-webkit-scrollbar {
-          width: 6px;
-        }
-        .overflow-y-auto::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-        }
-        .overflow-y-auto::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, #06b6d4, #8b5cf6);
-          border-radius: 10px;
-        }
-        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(to bottom, #0891b2, #7c3aed);
-        }
+        .cl-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+
+        /* Back */
+        .cl-back { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500; cursor: pointer; margin-bottom: 28px; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .cl-back:hover { color: #fff; background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2); }
+
+        /* Header */
+        .cl-eyebrow { font-size: 11px; font-weight: 700; color: #10b981; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+        .cl-title { font-family: 'Playfair Display', serif; font-size: clamp(26px, 3vw, 36px); font-weight: 700; color: #fff; line-height: 1.2; margin: 0 0 32px; }
+        .cl-title em { color: #10b981; font-style: italic; }
+
+        /* Form card */
+        .cl-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 28px; margin-bottom: 14px; }
+        .cl-label { display: block; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+        .cl-input { width: 100%; padding: 12px 16px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .2s; box-sizing: border-box; }
+        .cl-input:focus { border-color: #10b981; }
+        .cl-input::placeholder { color: rgba(255,255,255,.22); }
+
+        /* Buttons row */
+        .cl-btn-row { display: flex; gap: 10px; margin-top: 18px; }
+        .cl-btn-ghost { flex: 1; padding: 11px; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .cl-btn-ghost:hover { background: rgba(255,255,255,.09); color: #fff; }
+        .cl-btn-ghost:disabled { opacity: .4; cursor: not-allowed; }
+        .cl-btn-primary { flex: 2; padding: 11px; border-radius: 10px; background: #10b981; border: none; color: #07090f; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s, transform .15s, box-shadow .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .cl-btn-primary:hover:not(:disabled) { background: #0ea472; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.28); }
+        .cl-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* Divider */
+        .cl-divider { height: 1px; background: rgba(255,255,255,.06); margin: 24px 0; }
+
+        /* List header */
+        .cl-list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .cl-list-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: 1px; }
+        .cl-count-pill { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); color: #10b981; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
+
+        /* Lecture items */
+        .cl-lecture-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
+        .cl-lecture-list::-webkit-scrollbar { width: 4px; }
+        .cl-lecture-list::-webkit-scrollbar-track { background: transparent; }
+        .cl-lecture-list::-webkit-scrollbar-thumb { background: rgba(16,185,129,.3); border-radius: 100px; }
+
+        .cl-lecture-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; transition: border-color .2s; }
+        .cl-lecture-item:hover { border-color: rgba(16,185,129,.2); }
+        .cl-lecture-num { width: 30px; height: 30px; border-radius: 8px; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.15); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #10b981; flex-shrink: 0; }
+        .cl-lecture-name { flex: 1; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.8); }
+        .cl-lecture-sub { font-size: 11px; color: rgba(255,255,255,.25); margin-top: 2px; }
+        .cl-edit-btn { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; flex-shrink: 0; }
+        .cl-edit-btn:hover { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.25); color: #10b981; }
+
+        /* Empty state */
+        .cl-empty { text-align: center; padding: 40px 24px; }
+        .cl-empty-icon { font-size: 32px; opacity: .25; margin-bottom: 10px; }
+        .cl-empty-title { font-family: 'Playfair Display', serif; font-size: 16px; color: rgba(255,255,255,.25); margin-bottom: 4px; }
+        .cl-empty-sub { font-size: 12px; color: rgba(255,255,255,.15); }
+
+        /* Stats row */
+        .cl-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .cl-stat { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 14px; padding: 16px; text-align: center; }
+        .cl-stat-val { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .cl-stat-label { font-size: 11px; color: rgba(255,255,255,.3); }
       `}</style>
-    </div>
+
+      <div className="cl-root">
+        <div className="cl-glow1" /><div className="cl-glow2" /><div className="cl-grid" />
+
+        <div className="cl-inner">
+
+          {/* Back button */}
+          <button className="cl-back" onClick={() => navigate(`/editcourse/${courseId}`)}>
+            <FaArrowLeftLong size={11} /> Back to Course
+          </button>
+
+          {/* Header */}
+          <div className="cl-eyebrow">Course Builder</div>
+          <h1 className="cl-title">Manage <em>lectures</em></h1>
+
+          {/* Form card */}
+          <div className="cl-card">
+            <label className="cl-label">New Lecture Title <span style={{ color: '#10b981' }}>*</span></label>
+            <input
+              className="cl-input"
+              type="text"
+              placeholder="e.g. Introduction to MERN Stack"
+              value={lectureTitle}
+              onChange={e => setLectureTitle(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !loading && handleCreateLecture()}
+            />
+            <div className="cl-btn-row">
+              <button className="cl-btn-ghost" disabled={loading} onClick={() => navigate(`/editcourse/${courseId}`)}>
+                <FaArrowLeftLong size={11} /> Back
+              </button>
+              <button className="cl-btn-primary" onClick={handleCreateLecture} disabled={loading || !lectureTitle.trim()}>
+                {loading ? <><ClipLoader size={13} color="#07090f" /> Creating...</> : '+ Add Lecture'}
+              </button>
+            </div>
+          </div>
+
+          {/* Lectures list card */}
+          <div className="cl-card">
+            <div className="cl-list-header">
+              <div className="cl-list-title">Lectures</div>
+              <div className="cl-count-pill">{count} total</div>
+            </div>
+
+            {count === 0 ? (
+              <div className="cl-empty">
+                <div className="cl-empty-icon">📹</div>
+                <div className="cl-empty-title">No lectures yet</div>
+                <div className="cl-empty-sub">Add your first lecture above to get started</div>
+              </div>
+            ) : (
+              <div className="cl-lecture-list">
+                {lectureData.map((lecture, index) => (
+                  <div className="cl-lecture-item" key={lecture._id || index}>
+                    <div className="cl-lecture-num">{index + 1}</div>
+                    <div style={{ flex: 1 }}>
+                      <div className="cl-lecture-name">{lecture.lectureTitle}</div>
+                      <div className="cl-lecture-sub">
+                        {lecture.videoUrl ? '✓ Video attached' : 'No video yet — click edit to upload'}
+                      </div>
+                    </div>
+                    {lecture.isPreviewFree && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.2)', padding: '3px 8px', borderRadius: 100 }}>
+                        Free
+                      </span>
+                    )}
+                    <button
+                      className="cl-edit-btn"
+                      onClick={() => navigate(`/editlecture/${courseId}/${lecture._id}`)}
+                    >
+                      <FaEdit size={12} color="rgba(255,255,255,.5)" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Stats */}
+          <div className="cl-stats">
+            <div className="cl-stat">
+              <div className="cl-stat-val">{count}</div>
+              <div className="cl-stat-label">Total Lectures</div>
+            </div>
+            <div className="cl-stat">
+              <div className="cl-stat-val" style={{ color: '#10b981' }}>
+                {lectureData?.filter(l => l.videoUrl).length || 0}
+              </div>
+              <div className="cl-stat-label">With Video</div>
+            </div>
+            <div className="cl-stat">
+              <div className="cl-stat-val" style={{ color: '#f59e0b' }}>
+                {lectureData?.filter(l => !l.videoUrl).length || 0}
+              </div>
+              <div className="cl-stat-label">Pending Upload</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
   );
 };
 
