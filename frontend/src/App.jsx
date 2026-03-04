@@ -25,7 +25,7 @@ import MyEnrolledCourses from './pages/MyEnrolledCourses';
 import getAllReviews from './customHooks/getAllReviews';
 import RenderWakeup from './RenderWakeup'; 
 
-export const serverUrl = "http://localhost:7000";
+export const serverUrl = "https://edunexa-elu3.onrender.com";
 
 const App = () => {
   useGetCurrentUser();
