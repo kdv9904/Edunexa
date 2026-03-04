@@ -16,7 +16,9 @@ const useGetCurrentUser = () => {
       } catch (error) {
         console.error(error);
         dispatch(setUserData(null)); // also sets loading=false in your slice
-      }
+      } finally {
+    dispatch(setLoading(false)); // ← add this
+  }
     };
 
     fetchUser();

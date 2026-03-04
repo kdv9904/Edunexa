@@ -41,8 +41,10 @@ const App = () => {
       <ToastContainer />
       <ScrollToTop/>
       {!serverReady ? (
-        <RenderWakeup onReady={() => setServerReady(true)} />
-      ) : (
+      <RenderWakeup onReady={() => setServerReady(true)} />
+    ) : loading ? (
+      null
+    ) :  (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
