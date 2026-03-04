@@ -40,7 +40,7 @@ const App = () => {
     <>
       <ToastContainer />
       <ScrollToTop/>
-      {!serverReady ? (
+      {!serverReady || loading ? (
       <RenderWakeup onReady={() => setServerReady(true)} />
     ) : loading ? (
       null
