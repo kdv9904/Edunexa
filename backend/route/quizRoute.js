@@ -1,10 +1,10 @@
 // route/quizRoute.js
+// Uses Google Gemini API — completely FREE tier available
+// Get your key at: https://aistudio.google.com/app/apikey (no credit card)
 import express from 'express';
-import Anthropic from '@anthropic-ai/sdk';
 
 const router = express.Router();
 
-// ✅ Client created INSIDE the handler so process.env is already loaded
 router.post('/generate', async (req, res) => {
   const { lectureTitle } = req.body;
 
@@ -12,44 +12,61 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ message: 'lectureTitle is required' });
   }
 
-  try {
-    // Instantiate here — dotenv is guaranteed to have run by now
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ message: 'GEMINI_API_KEY not set in environment' });
+  }
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: `You are a quiz generator for an online learning platform.
+  const prompt = `You are a quiz generator for an online learning platform.
 
 Generate exactly 4 multiple choice questions to test understanding of a lecture titled: "${lectureTitle}"
 
 Rules:
-- Each question must have exactly 4 options (A, B, C, D)
+- Each question must have exactly 4 options
 - Only one option is correct
 - Questions should test conceptual understanding, not trivia
 - Keep questions concise and clear
 
-Respond ONLY with a valid JSON array. No markdown, no explanation, no backticks, no code fences.
+Respond ONLY with a valid JSON array. No markdown, no explanation, no backticks, no code fences. Just raw JSON.
 
-Example output:
+Example:
 [{"question":"What is X?","options":["A","B","C","D"],"correctIndex":0},{"question":"Why Y?","options":["A","B","C","D"],"correctIndex":2}]
 
-correctIndex is 0-based (0 = first option, 1 = second, etc.)`
-        }
-      ]
-    });
+correctIndex is 0-based.`;
 
-    const raw = message.content[0]?.text?.trim() || '[]';
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Gemini API error:', data);
+      return res.status(500).json({
+        message: data?.error?.message || 'Gemini API error',
+      });
+    }
+
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '[]';
     const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
 
     let questions;
     try {
       questions = JSON.parse(cleaned);
     } catch {
-      console.error('Failed to parse quiz JSON:', cleaned);
+      console.error('JSON parse failed:', cleaned);
       return res.status(500).json({ message: 'Failed to parse quiz response' });
     }
 
@@ -64,14 +81,10 @@ correctIndex is 0-based (0 = first option, 1 = second, etc.)`
       typeof q.correctIndex === 'number'
     );
 
-    if (valid.length === 0) {
-      return res.status(500).json({ message: 'No valid questions generated' });
-    }
-
     return res.json({ questions: valid });
 
   } catch (error) {
-    console.error('Quiz generation error:', error.message);
+    console.error('Quiz route error:', error.message);
     return res.status(500).json({ message: 'Quiz generation failed', error: error.message });
   }
 });
