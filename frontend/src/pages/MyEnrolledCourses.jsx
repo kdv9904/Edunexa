@@ -1,100 +1,158 @@
 import React from 'react'
 import { FaArrowLeftLong } from 'react-icons/fa6';
+import { FaPlayCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom';
 
 const MyEnrolledCourses = () => {
-    const {userData} = useSelector(state=>state.user);
-    const navigate = useNavigate();
-    
+  const { userData } = useSelector(state => state.user);
+  const navigate = useNavigate();
+  const courses = userData?.user?.enrolledCourses || [];
+
   return (
-    <div className='min-h-screen w-full px-4 py-9 bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10'>
-        {/* Back Button */}
-        <div className='relative mb-4'>
-            <button 
-                onClick={()=>navigate("/")}
-                className='group flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 hover:border-blue-300'
-            >
-                <FaArrowLeftLong className='w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors'/>
-                <span className='text-gray-700 font-medium group-hover:text-blue-600 transition-colors'>Back to Home</span>
-            </button>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-        {/* Header */}
-        <div className='text-center mb-1'>
-            <h1 className='text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4'>
-                My Learning Journey
+        *, *::before, *::after { box-sizing: border-box; }
+
+        .mec-root { min-height: 100vh; background: #07090f; font-family: 'DM Sans', sans-serif; position: relative; overflow-x: hidden; padding: 40px 24px 80px; }
+        .mec-glow1 { position: fixed; width: 700px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.055) 0%, transparent 70%); top: -200px; right: -200px; pointer-events: none; z-index: 0; }
+        .mec-glow2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.05) 0%, transparent 70%); bottom: -120px; left: -120px; pointer-events: none; z-index: 0; }
+        .mec-grid { position: fixed; inset: 0; opacity: .018; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 56px 56px; }
+        .mec-inner { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; }
+
+        /* Back */
+        .mec-back { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500; cursor: pointer; margin-bottom: 36px; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .mec-back:hover { color: #fff; background: rgba(255,255,255,.09); }
+
+        /* Header */
+        .mec-header { margin-bottom: 40px; }
+        .mec-eyebrow { font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 12px; }
+        .mec-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 3.5vw, 42px); font-weight: 700; color: #fff; margin: 0 0 10px; line-height: 1.15; }
+        .mec-title em { color: #10b981; font-style: italic; }
+        .mec-subtitle { font-size: 14px; color: rgba(255,255,255,.35); max-width: 440px; line-height: 1.6; margin: 0; }
+        .mec-count-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.18); padding: 5px 14px; border-radius: 100px; font-size: 12px; font-weight: 700; color: #10b981; margin-top: 16px; }
+
+        /* Grid */
+        .mec-grid-courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+        /* Card */
+        .mec-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; overflow: hidden; transition: border-color .2s, transform .2s; cursor: pointer; }
+        .mec-card:hover { border-color: rgba(16,185,129,.25); transform: translateY(-3px); }
+
+        .mec-thumb { position: relative; overflow: hidden; }
+        .mec-thumb img { width: 100%; height: 190px; object-fit: cover; display: block; transition: transform .4s ease; }
+        .mec-card:hover .mec-thumb img { transform: scale(1.04); }
+        .mec-thumb-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(7,9,15,.7) 0%, transparent 50%); }
+
+        .mec-level-badge { position: absolute; top: 12px; right: 12px; background: rgba(7,9,15,.75); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.12); padding: 4px 11px; border-radius: 100px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.65); text-transform: uppercase; letter-spacing: .5px; }
+
+        .mec-play-btn { position: absolute; bottom: 12px; left: 12px; width: 36px; height: 36px; border-radius: 50%; background: rgba(16,185,129,.85); display: flex; align-items: center; justify-content: center; opacity: 0; transform: scale(.8); transition: all .2s; }
+        .mec-card:hover .mec-play-btn { opacity: 1; transform: scale(1); }
+
+        /* Card body */
+        .mec-card-body { padding: 18px 20px 20px; }
+        .mec-cat { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: #818cf8; background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.15); padding: 3px 10px; border-radius: 100px; letter-spacing: .4px; margin-bottom: 10px; text-transform: uppercase; }
+        .mec-course-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #fff; line-height: 1.35; margin: 0 0 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .mec-cta { width: 100%; padding: 11px; border-radius: 10px; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.22); color: #10b981; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .mec-cta:hover { background: #10b981; color: #07090f; }
+
+        /* Empty state */
+        .mec-empty { text-align: center; padding: 80px 24px; }
+        .mec-empty-icon { font-size: 56px; opacity: .2; margin-bottom: 20px; }
+        .mec-empty-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+        .mec-empty-sub { font-size: 14px; color: rgba(255,255,255,.3); margin-bottom: 28px; max-width: 340px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+        .mec-empty-btn { padding: 12px 28px; background: #10b981; border: none; border-radius: 11px; color: #07090f; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s, transform .15s; }
+        .mec-empty-btn:hover { background: #0ea472; transform: translateY(-1px); }
+      `}</style>
+
+      <div className="mec-root">
+        <div className="mec-glow1" /><div className="mec-glow2" /><div className="mec-grid" />
+
+        <div className="mec-inner">
+
+          {/* Back */}
+          <button className="mec-back" onClick={() => navigate('/')}>
+            <FaArrowLeftLong size={11} /> Back to Home
+          </button>
+
+          {/* Header */}
+          <div className="mec-header">
+            <div className="mec-eyebrow">MY LEARNING</div>
+            <h1 className="mec-title">
+              Your learning <em>journey</em>
             </h1>
-            <p className='text-gray-600 max-w-2xl mx-auto'>
-                Continue your progress and master new skills with your enrolled courses
+            <p className="mec-subtitle">
+              Pick up where you left off and keep building your skills.
             </p>
-        </div>
+            {courses.length > 0 && (
+              <div className="mec-count-pill">
+                📚 {courses.length} enrolled course{courses.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
 
-        {
-            !userData?.user?.enrolledCourses || userData?.user?.enrolledCourses?.length === 0 ? (
-                <div className='text-center py-16'>
-                    <div className='w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center'>
-                        <span className='text-3xl text-gray-400'>📚</span>
+          {courses.length === 0 ? (
+            /* Empty state */
+            <div className="mec-empty">
+              <div className="mec-empty-icon">📚</div>
+              <div className="mec-empty-title">No courses yet</div>
+              <p className="mec-empty-sub">
+                You haven't enrolled in any courses. Start your learning journey today.
+              </p>
+              <button className="mec-empty-btn" onClick={() => navigate('/allcourses')}>
+                Explore Courses
+              </button>
+            </div>
+          ) : (
+            /* Course grid */
+            <div className="mec-grid-courses">
+              {courses.map((course, index) => (
+                <div
+                  key={course?._id || index}
+                  className="mec-card"
+                  onClick={() => navigate(`/viewcourse/${course._id}`)}
+                >
+                  {/* Thumbnail */}
+                  <div className="mec-thumb">
+                    {course?.thumbnail ? (
+                      <img src={course.thumbnail} alt={course.title} />
+                    ) : (
+                      <div style={{ width: '100%', height: 190, background: 'rgba(16,185,129,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, opacity: .3 }}>📹</div>
+                    )}
+                    <div className="mec-thumb-overlay" />
+                    {course?.level && (
+                      <div className="mec-level-badge">{course.level}</div>
+                    )}
+                    <div className="mec-play-btn">
+                      <FaPlayCircle size={16} color="#07090f" />
                     </div>
-                    <h3 className='text-2xl font-semibold text-gray-600 mb-4'>No Courses Enrolled Yet</h3>
-                    <p className='text-gray-500 mb-6'>Start your learning journey by exploring our courses</p>
-                    <button 
-                        onClick={() => navigate("/allcourses")}
-                        className='px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105'
+                  </div>
+
+                  {/* Body */}
+                  <div className="mec-card-body">
+                    {course?.category && (
+                      <div className="mec-cat">{course.category}</div>
+                    )}
+                    <h2 className="mec-course-title">{course?.title || 'Untitled Course'}</h2>
+                    <button
+                      className="mec-cta"
+                      onClick={e => { e.stopPropagation(); navigate(`/viewlecture/${course._id}`); }}
                     >
-                        Explore Courses
+                      <FaPlayCircle size={12} /> Continue Learning
                     </button>
+                  </div>
                 </div>
-            ) : (
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto'>
-                    {userData?.user?.enrolledCourses?.map((course,index) => (
-                        <div 
-                            key={index} 
-                            className='group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 border border-gray-200 overflow-hidden'
-                        >
-                            {/* Course Image */}
-                            <div className='relative overflow-hidden'>
-                                <img 
-                                    src={course?.thumbnail} 
-                                    alt={course?.title} 
-                                    className='w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500'
-                                />
-                                {/* Difficulty Badge */}
-                                <div className='absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-700 shadow-lg'>
-                                    {course?.level || 'Beginner'}
-                                </div>
-                            </div>
+              ))}
+            </div>
+          )}
 
-                            {/* Course Content */}
-                            <div className='p-6'>
-                                <h2 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                                    {course?.title}
-                                </h2>
-                                <p className='text-sm text-gray-600 mb-4 flex items-center gap-1'>
-                                    <span className='text-purple-500'>●</span>
-                                    {course?.category}
-                                </p>
+        </div>
+      </div>
+    </>
+  );
+};
 
-                                {/* Action Button */}
-                                <button 
-                                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105"
-                                    onClick={() => navigate(`/viewcourse/${course._id}`)}
-                                >
-                                    Continue Learning
-                                </button>
-                            </div>
-
-                            {/* Hover Effect Border */}
-                            <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10">
-                                <div className="w-full h-full bg-white rounded-3xl m-0.5"></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )
-        }
-    </div>
-  )
-}
-
-export default MyEnrolledCourses
+export default MyEnrolledCourses;

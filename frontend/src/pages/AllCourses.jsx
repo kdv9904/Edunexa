@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { FaFilter, FaSearch, FaRobot, FaFire, FaStar, FaUsers, FaTimes, FaSlidersH, FaBookOpen } from "react-icons/fa";
+import { FaSearch, FaTimes, FaBookOpen, FaUsers, FaFire, FaSlidersH } from "react-icons/fa";
 import Nav from "../component/Nav";
 import Card from "../component/Card";
 import usePublishedCourse from "../customHooks/getPublishedCourse";
@@ -9,446 +9,371 @@ import usePublishedCourse from "../customHooks/getPublishedCourse";
 const AllCourses = () => {
   const navigate = useNavigate();
   const { creatorCourseData: courseData = [] } = useSelector((state) => state.course);
-  const [category, setCategory] = useState([]);
+  const [category, setCategory]       = useState([]);
   const [filterCourses, setFilterCourses] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("popular");
+  const [searchTerm, setSearchTerm]   = useState("");
+  const [sortBy, setSortBy]           = useState("popular");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [difficulty, setDifficulty] = useState("all");
-  const [particles, setParticles] = useState([]);
 
-  // Fetch courses using custom hook
   usePublishedCourse();
 
-  // Generate floating particles
-  useEffect(() => {
-    const newParticles = Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      delay: Math.random() * 5,
-      size: Math.random() * 3 + 1,
-    }));
-    setParticles(newParticles);
-  }, []);
-
-  // Categories with icons and colors
   const categories = [
-    { name: "App Development", icon: "📱", color: "from-cyan-500 to-blue-600" },
-    { name: "Web Development", icon: "🌐", color: "from-purple-500 to-pink-600" },
-    { name: "Data Science", icon: "📊", color: "from-green-500 to-emerald-600" },
-    { name: "Machine Learning", icon: "🤖", color: "from-orange-500 to-red-600" },
-    { name: "Artificial Intelligence", icon: "🧠", color: "from-indigo-500 to-purple-600" },
-    { name: "Cloud Computing", icon: "☁️", color: "from-blue-500 to-cyan-600" },
-    { name: "Cyber Security", icon: "🔒", color: "from-red-500 to-orange-600" },
-    { name: "Blockchain", icon: "⛓️", color: "from-yellow-500 to-orange-600" },
-    { name: "Game Development", icon: "🎮", color: "from-pink-500 to-rose-600" },
-    { name: "UI/UX Design", icon: "🎨", color: "from-teal-500 to-cyan-600" },
+    { name: "Web Development",       icon: "🌐" },
+    { name: "App Development",       icon: "📱" },
+    { name: "Data Science",          icon: "📊" },
+    { name: "Machine Learning",      icon: "🤖" },
+    { name: "Artificial Intelligence", icon: "🧠" },
+    { name: "Cloud Computing",       icon: "☁️" },
+    { name: "Cyber Security",        icon: "🔒" },
+    { name: "Blockchain",            icon: "⛓️" },
+    { name: "Game Development",      icon: "🎮" },
+    { name: "UI/UX Design",          icon: "🎨" },
   ];
 
-  // Filter and sort courses
   useEffect(() => {
     let filtered = [...courseData];
-
-    // Category filter
-    if (category.length > 0) {
-      filtered = filtered.filter((c) =>
-        category.includes(c.category)
-      );
-    }
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter((c) =>
+    if (category.length > 0)
+      filtered = filtered.filter(c => category.includes(c.category));
+    if (searchTerm)
+      filtered = filtered.filter(c =>
         c.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.category?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    }
-
-    // Difficulty filter - FIXED: Handle case sensitivity and null/undefined values
-    if (difficulty !== "all") {
-      filtered = filtered.filter((c) => 
-        c.difficulty?.toLowerCase() === difficulty.toLowerCase()
-      );
-    }
-
-    // Sort courses
     switch (sortBy) {
-      case "price-low":
-        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-        break;
-      case "price-high":
-        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-        break;
-      case "rating":
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case "newest":
-        filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        break;
-      default:
-        // Popular (default) - sort by enrollment count
-        filtered.sort((a, b) => (b.enrollmentCount || 0) - (a.enrollmentCount || 0));
+      case "price-low":  filtered.sort((a,b) => (a.price||0) - (b.price||0)); break;
+      case "price-high": filtered.sort((a,b) => (b.price||0) - (a.price||0)); break;
+      case "newest":     filtered.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0)); break;
+      default:           filtered.sort((a,b) => (b.enrollmentCount||0) - (a.enrollmentCount||0));
     }
-
     setFilterCourses(filtered);
-  }, [category, courseData, searchTerm, sortBy, difficulty]);
+  }, [category, courseData, searchTerm, sortBy]);
 
-  const toggleCategory = (catName) => {
-    setCategory(prev =>
-      prev.includes(catName) 
-        ? prev.filter(c => c !== catName)
-        : [...prev, catName]
-    );
-  };
+  const toggleCategory = (name) =>
+    setCategory(prev => prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]);
 
-  const clearAllFilters = () => {
-    setCategory([]);
-    setSearchTerm("");
-    setSortBy("popular");
-    setDifficulty("all");
-  };
+  const clearAll = () => { setCategory([]); setSearchTerm(""); setSortBy("popular"); };
 
-  const stats = [
-    { label: "Total Courses", value: courseData?.length || 0, icon: FaBookOpen, color: "text-cyan-400" },
-    { label: "Categories", value: categories.length, icon: FaFilter, color: "text-purple-400" },
-    { label: "New This Week", value: "12+", icon: FaFire, color: "text-orange-400" },
-    { label: "Active Learners", value: "2.5K+", icon: FaUsers, color: "text-green-400" },
-  ];
+  const hasFilters = category.length > 0 || searchTerm || sortBy !== "popular";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 relative overflow-hidden">
-      {/* Animated Background Particles */}
-      {particles.map(particle => (
-        <div
-          key={particle.id}
-          className="absolute rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 opacity-20 animate-float"
-          style={{
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-            width: `${particle.size}px`,
-            height: `${particle.size}px`,
-            animationDelay: `${particle.delay}s`,
-          }}
-        />
-      ))}
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-      {/* Geometric Background Elements */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-pink-500/5 rounded-full blur-2xl"></div>
+        *, *::before, *::after { box-sizing: border-box; }
 
-      <Nav />
-      
-      {/* Main Container */}
-      <div className="pt-24 pb-12 relative z-10">
-        {/* Header Section */}
-        <div className="text-center mb-12 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-6">
-              Discover Your Next Skill
+        .ac-root { min-height: 100vh; background: #07090f; font-family: 'DM Sans', sans-serif; position: relative; overflow-x: hidden; }
+        .ac-glow1 { position: fixed; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.05) 0%, transparent 70%); top: -250px; right: -250px; pointer-events: none; z-index: 0; }
+        .ac-glow2 { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.045) 0%, transparent 70%); bottom: -150px; left: -150px; pointer-events: none; z-index: 0; }
+        .ac-grid-bg { position: fixed; inset: 0; opacity: .018; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 56px 56px; }
+        .ac-inner { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 100px 24px 80px; }
+
+        /* ── Header ── */
+        .ac-header { text-align: center; margin-bottom: 48px; }
+        .ac-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 16px; }
+        .ac-eyebrow-dot { width: 5px; height: 5px; border-radius: 50%; background: #10b981; }
+        .ac-title { font-family: 'Playfair Display', serif; font-size: clamp(32px, 4vw, 52px); font-weight: 700; color: #fff; margin: 0 0 14px; line-height: 1.15; }
+        .ac-title em { color: #10b981; font-style: italic; }
+        .ac-subtitle { font-size: 16px; color: rgba(255,255,255,.38); max-width: 480px; margin: 0 auto 32px; line-height: 1.6; }
+
+        /* ── Search ── */
+        .ac-search-wrap { position: relative; max-width: 560px; margin: 0 auto 40px; }
+        .ac-search-input { width: 100%; padding: 14px 48px 14px 20px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .2s, background .2s; }
+        .ac-search-input:focus { border-color: rgba(16,185,129,.4); background: rgba(255,255,255,.06); }
+        .ac-search-input::placeholder { color: rgba(255,255,255,.2); }
+        .ac-search-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.2); pointer-events: none; }
+
+        /* ── Stats ── */
+        .ac-stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 48px; }
+        .ac-stat { display: flex; align-items: center; gap: 9px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 100px; padding: 8px 16px; }
+        .ac-stat-icon { font-size: 13px; }
+        .ac-stat-val { font-size: 13px; font-weight: 700; color: #fff; }
+        .ac-stat-label { font-size: 12px; color: rgba(255,255,255,.3); }
+
+        /* ── Layout ── */
+        .ac-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
+        @media(max-width:900px) { .ac-layout { grid-template-columns: 1fr; } }
+
+        /* ── Sidebar ── */
+        .ac-sidebar { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 20px; padding: 22px; position: sticky; top: 90px; }
+        .ac-sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .ac-sidebar-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1.2px; }
+        .ac-clear-btn { font-size: 11px; font-weight: 700; color: #10b981; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; }
+        .ac-clear-btn:hover { color: #34d399; }
+
+        /* Sort */
+        .ac-section-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.25); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .ac-sort-wrap { position: relative; margin-bottom: 20px; }
+        .ac-sort-select { width: 100%; padding: 10px 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; color: #fff; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; appearance: none; cursor: pointer; transition: border-color .2s; }
+        .ac-sort-select:focus { border-color: rgba(16,185,129,.3); }
+        .ac-sort-select option { background: #0f172a; }
+        .ac-sort-chevron { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.2); pointer-events: none; font-size: 10px; }
+
+        /* Category pills */
+        .ac-divider { height: 1px; background: rgba(255,255,255,.06); margin: 16px 0; }
+        .ac-cat-list { display: flex; flex-direction: column; gap: 5px; max-height: 400px; overflow-y: auto; padding-right: 2px; }
+        .ac-cat-list::-webkit-scrollbar { width: 3px; }
+        .ac-cat-list::-webkit-scrollbar-thumb { background: rgba(16,185,129,.25); border-radius: 100px; }
+        .ac-cat-btn { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; text-align: left; width: 100%; }
+        .ac-cat-btn:hover:not(.active) { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+        .ac-cat-btn.active { background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.25); }
+        .ac-cat-icon { font-size: 14px; flex-shrink: 0; }
+        .ac-cat-name { flex: 1; font-size: 12px; font-weight: 500; color: rgba(255,255,255,.5); }
+        .ac-cat-btn.active .ac-cat-name { color: #10b981; font-weight: 600; }
+        .ac-cat-check { width: 16px; height: 16px; border-radius: 5px; background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); display: flex; align-items: center; justify-content: center; font-size: 9px; color: #10b981; flex-shrink: 0; }
+
+        /* ── Content area ── */
+        .ac-content-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .ac-results-count { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #fff; }
+        .ac-results-count em { color: #10b981; font-style: italic; }
+        .ac-results-sub { font-size: 12px; color: rgba(255,255,255,.25); margin-top: 3px; }
+
+        /* Active filter tags */
+        .ac-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+        .ac-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2); padding: 4px 10px 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 600; color: #10b981; }
+        .ac-tag-remove { width: 14px; height: 14px; border-radius: 50%; border: none; background: rgba(16,185,129,.15); color: #10b981; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 8px; transition: background .15s; }
+        .ac-tag-remove:hover { background: rgba(16,185,129,.3); }
+
+        /* Grid */
+        .ac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+
+        /* Empty state */
+        .ac-empty { text-align: center; padding: 64px 24px; background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); border-radius: 20px; }
+        .ac-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
+        .ac-empty-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+        .ac-empty-sub { font-size: 13px; color: rgba(255,255,255,.3); margin-bottom: 24px; }
+        .ac-empty-btn { padding: 11px 24px; background: #10b981; border: none; border-radius: 10px; color: #07090f; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s; }
+        .ac-empty-btn:hover { background: #0ea472; }
+
+        /* Mobile filter fab */
+        .ac-fab { display: none; position: fixed; bottom: 24px; right: 24px; z-index: 50; width: 52px; height: 52px; border-radius: 50%; background: #10b981; border: none; color: #07090f; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(16,185,129,.35); transition: transform .2s; }
+        .ac-fab:hover { transform: scale(1.08); }
+        @media(max-width:900px) { .ac-fab { display: flex; } .ac-sidebar { display: none; } }
+
+        /* Mobile drawer */
+        .ac-drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); z-index: 100; }
+        .ac-drawer { position: fixed; right: 0; top: 0; height: 100%; width: 300px; background: #0a0d16; border-left: 1px solid rgba(255,255,255,.08); z-index: 101; padding: 24px; overflow-y: auto; }
+        .ac-drawer-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .ac-drawer-title { font-size: 16px; font-weight: 700; color: #fff; }
+        .ac-drawer-close { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.5); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      `}</style>
+
+      <div className="ac-root">
+        <div className="ac-glow1" /><div className="ac-glow2" /><div className="ac-grid-bg" />
+        <Nav />
+
+        <div className="ac-inner">
+
+          {/* Header */}
+          <div className="ac-header">
+            <div className="ac-eyebrow">
+              <div className="ac-eyebrow-dot" /> Explore Courses <div className="ac-eyebrow-dot" />
+            </div>
+            <h1 className="ac-title">
+              Discover your next <em>skill</em>
             </h1>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Explore our curated collection of premium courses and start your learning journey today
+            <p className="ac-subtitle">
+              Browse our curated collection of expert-led courses and start learning today.
             </p>
-            
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto relative mb-8">
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Search courses, topics, or instructors..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-6 py-4 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 shadow-2xl transition-all duration-300 text-lg"
-                />
-                <FaSearch className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              </div>
+
+            {/* Search */}
+            <div className="ac-search-wrap">
+              <input
+                className="ac-search-input"
+                type="text"
+                placeholder="Search courses, topics, categories..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              <FaSearch className="ac-search-icon" size={13} />
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {stats.map((stat, index) => (
-                <div key={index} className="bg-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/10 hover:border-cyan-500/30 transition-all duration-300 hover:scale-105">
-                  <stat.icon className={`w-8 h-8 mx-auto mb-3 ${stat.color}`} />
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-gray-400 text-sm">{stat.label}</div>
-                </div>
-              ))}
+            {/* Stats */}
+            <div className="ac-stats">
+              <div className="ac-stat">
+                <span className="ac-stat-icon">📚</span>
+                <span className="ac-stat-val">{courseData.length}</span>
+                <span className="ac-stat-label">Courses</span>
+              </div>
+              <div className="ac-stat">
+                <span className="ac-stat-icon">🗂️</span>
+                <span className="ac-stat-val">{categories.length}</span>
+                <span className="ac-stat-label">Categories</span>
+              </div>
+              <div className="ac-stat">
+                <span className="ac-stat-icon">🔥</span>
+                <span className="ac-stat-val">12+</span>
+                <span className="ac-stat-label">New this week</span>
+              </div>
+              <div className="ac-stat">
+                <span className="ac-stat-icon">👥</span>
+                <span className="ac-stat-val">2.5K+</span>
+                <span className="ac-stat-label">Learners</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filter Sidebar - Desktop */}
-            <div className="lg:w-80 flex-shrink-0">
-              <div className="bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 sticky top-32">
-                {/* Filter Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                    <FaSlidersH className="w-5 h-5 text-cyan-400" />
-                    Filters
-                  </h2>
-                  {(category.length > 0 || searchTerm || sortBy !== "popular" || difficulty !== "all") && (
+          {/* Layout */}
+          <div className="ac-layout">
+
+            {/* Sidebar */}
+            <div className="ac-sidebar">
+              <div className="ac-sidebar-header">
+                <div className="ac-sidebar-title">
+                  <FaSlidersH size={11} /> Filters
+                </div>
+                {hasFilters && <button className="ac-clear-btn" onClick={clearAll}>Clear all</button>}
+              </div>
+
+              {/* Sort */}
+              <div className="ac-section-label">Sort by</div>
+              <div className="ac-sort-wrap">
+                <select className="ac-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <option value="popular">Most Popular</option>
+                  <option value="newest">Newest First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                </select>
+                <span className="ac-sort-chevron">▼</span>
+              </div>
+
+              <div className="ac-divider" />
+
+              {/* Categories */}
+              <div className="ac-section-label" style={{ marginBottom: 10 }}>Categories</div>
+              <div className="ac-cat-list">
+                {categories.map(cat => {
+                  const active = category.includes(cat.name);
+                  return (
                     <button
-                      onClick={clearAllFilters}
-                      className="text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                      key={cat.name}
+                      className={`ac-cat-btn${active ? ' active' : ''}`}
+                      onClick={() => toggleCategory(cat.name)}
                     >
-                      Clear All
+                      <span className="ac-cat-icon">{cat.icon}</span>
+                      <span className="ac-cat-name">{cat.name}</span>
+                      {active && <div className="ac-cat-check">✓</div>}
                     </button>
-                  )}
-                </div>
-
-                {/* AI Search Button */}
-                <button className="w-full group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-xl p-4 mb-6 shadow-2xl hover:shadow-cyan-500/25 transition-all duration-500 hover:scale-105">
-                  <div className="flex items-center justify-center gap-3">
-                    <FaRobot className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <span className="font-semibold">AI Course Finder</span>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                </button>
-
-                {/* Sort Options */}
-                <div className="mb-6">
-                  <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                    <FaStar className="w-4 h-4 text-yellow-400" />
-                    Sort By
-                  </h3>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30 transition-all duration-300"
-                  >
-                    <option value="popular">Most Popular</option>
-                    <option value="rating">Highest Rated</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="newest">Newest First</option>
-                  </select>
-                </div>
-
-                {/* Categories */}
-                <div>
-                  <h3 className="text-white font-semibold mb-3">Categories</h3>
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.name}
-                        onClick={() => toggleCategory(cat.name)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 group text-left ${
-                          category.includes(cat.name) 
-                            ? 'bg-cyan-500/20 border border-cyan-400/30 shadow-lg' 
-                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white bg-gradient-to-r ${cat.color}`}>
-                          <span className="text-sm">{cat.icon}</span>
-                        </div>
-                        <span className={`font-medium flex-1 ${
-                          category.includes(cat.name) ? 'text-cyan-300' : 'text-gray-300'
-                        }`}>
-                          {cat.name}
-                        </span>
-                        {category.includes(cat.name) && (
-                          <FaTimes className="w-4 h-4 text-cyan-400" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1">
-              {/* Results Header */}
-              <div className="bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-6 mb-8">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">
-                      {filterCourses.length} {filterCourses.length === 1 ? 'Course' : 'Courses'} Found
-                    </h2>
-                    <p className="text-gray-400 mt-1">
-                      {category.length > 0 
-                        ? `in ${category.join(", ")}` 
-                        : "Across all categories"
-                      }
-                    </p>
+            {/* Content */}
+            <div>
+              {/* Results header */}
+              <div className="ac-content-header">
+                <div>
+                  <div className="ac-results-count">
+                    <em>{filterCourses.length}</em> {filterCourses.length === 1 ? 'course' : 'courses'} found
                   </div>
-                  
-                  {/* Active Filters */}
-                  <div className="flex flex-wrap gap-2">
-                    {category.map((cat) => (
-                      <span
-                        key={cat}
-                        className="px-3 py-2 bg-cyan-500/20 text-cyan-400 rounded-full text-sm font-medium flex items-center gap-2 border border-cyan-400/30"
-                      >
-                        {cat}
-                        <button
-                          onClick={() => setCategory(category.filter(c => c !== cat))}
-                          className="hover:text-cyan-300 transition-colors"
-                        >
-                          <FaTimes className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                    {(searchTerm || sortBy !== "popular" || difficulty !== "all") && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="px-3 py-2 bg-white/10 text-gray-300 rounded-full text-sm font-medium hover:bg-white/20 transition-colors border border-white/10"
-                      >
-                        Clear All
-                      </button>
-                    )}
+                  <div className="ac-results-sub">
+                    {category.length > 0 ? `in ${category.join(', ')}` : 'across all categories'}
                   </div>
                 </div>
+
+                {/* Active tags */}
+                {category.length > 0 && (
+                  <div className="ac-tags">
+                    {category.map(c => (
+                      <span key={c} className="ac-tag">
+                        {c}
+                        <button className="ac-tag-remove" onClick={() => setCategory(category.filter(x => x !== c))}>✕</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Courses Grid */}
-              {filterCourses?.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filterCourses.map((course, index) => (
-                    <div
-                      key={course._id || index}
-                      className="transform hover:scale-105 transition-all duration-500"
-                    >
-                      <Card
-                        thumbnail={course.thumbnail}
-                        title={course.title}
-                        category={course.category}
-                        price={course.price}
-                        id={course._id}
-                        rating={course.rating}
-                        enrollmentCount={course.enrollmentCount}
-                        duration={course.duration}
-                        difficulty={course.difficulty}
-                        review = {course.reviews}
-                      />
-                    </div>
+              {/* Grid */}
+              {filterCourses.length > 0 ? (
+                <div className="ac-grid">
+                  {filterCourses.map((course, i) => (
+                    <Card
+                      key={course._id || i}
+                      thumbnail={course.thumbnail}
+                      title={course.title}
+                      category={course.category}
+                      price={course.price}
+                      id={course._id}
+                      rating={course.rating}
+                      enrollmentCount={course.enrollmentCount}
+                      duration={course.duration}
+                      review={course.reviews}
+                    />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-gradient-to-br from-slate-800/60 to-purple-900/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10">
-                  <div className="text-6xl mb-4">🔍</div>
-                  <h3 className="text-2xl font-bold text-white mb-3">No courses found</h3>
-                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Try adjusting your search terms or filters to find what you're looking for.
-                  </p>
-                  <button
-                    onClick={clearAllFilters}
-                    className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-xl font-semibold shadow-2xl hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105"
-                  >
-                    Clear All Filters
-                  </button>
+                <div className="ac-empty">
+                  <div className="ac-empty-icon">🔍</div>
+                  <div className="ac-empty-title">No courses found</div>
+                  <div className="ac-empty-sub">Try adjusting your search or filters.</div>
+                  <button className="ac-empty-btn" onClick={clearAll}>Clear filters</button>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Filter Button */}
-      <button
-        onClick={() => setIsFilterOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:shadow-cyan-500/25 transition-all duration-300"
-      >
-        <FaFilter className="w-6 h-6" />
-      </button>
+        {/* Mobile FAB */}
+        <button className="ac-fab" onClick={() => setIsFilterOpen(true)}>
+          <FaSlidersH size={18} />
+        </button>
 
-      {/* Mobile Filter Overlay */}
-      {isFilterOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsFilterOpen(false)}
-          />
-          
-          {/* Filter Panel */}
-          <div className="absolute right-0 top-0 h-full w-80 bg-gradient-to-b from-slate-800 to-purple-900 shadow-2xl overflow-y-auto border-l border-white/10">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Filters</h2>
-                <button
-                  onClick={() => setIsFilterOpen(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <FaTimes className="w-5 h-5 text-gray-400" />
-                </button>
+        {/* Mobile Drawer */}
+        {isFilterOpen && (
+          <>
+            <div className="ac-drawer-backdrop" onClick={() => setIsFilterOpen(false)} />
+            <div className="ac-drawer">
+              <div className="ac-drawer-top">
+                <div className="ac-drawer-title">Filters</div>
+                <button className="ac-drawer-close" onClick={() => setIsFilterOpen(false)}>✕</button>
               </div>
 
-              {/* Mobile Filter Content */}
-              <div className="space-y-6">
-                {/* Sort Options */}
-                <div>
-                  <h3 className="text-white font-semibold mb-3">Sort By</h3>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/30"
-                  >
-                    <option value="popular">Most Popular</option>
-                    <option value="rating">Highest Rated</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="newest">Newest First</option>
-                  </select>
-                </div>
+              <div className="ac-section-label">Sort by</div>
+              <div className="ac-sort-wrap" style={{ marginBottom: 16 }}>
+                <select className="ac-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <option value="popular">Most Popular</option>
+                  <option value="newest">Newest First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                </select>
+                <span className="ac-sort-chevron">▼</span>
+              </div>
 
-                {/* Categories */}
-                <div>
-                  <h3 className="text-white font-semibold mb-3">Categories</h3>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.name}
-                        onClick={() => toggleCategory(cat.name)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 group text-left ${
-                          category.includes(cat.name) 
-                            ? 'bg-cyan-500/20 border border-cyan-400/30' 
-                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white bg-gradient-to-r ${cat.color}`}>
-                          <span className="text-xs">{cat.icon}</span>
-                        </div>
-                        <span className={`font-medium flex-1 text-sm ${
-                          category.includes(cat.name) ? 'text-cyan-300' : 'text-gray-300'
-                        }`}>
-                          {cat.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="ac-divider" />
+              <div className="ac-section-label" style={{ marginBottom: 10 }}>Categories</div>
+              <div className="ac-cat-list" style={{ maxHeight: '60vh' }}>
+                {categories.map(cat => {
+                  const active = category.includes(cat.name);
+                  return (
+                    <button
+                      key={cat.name}
+                      className={`ac-cat-btn${active ? ' active' : ''}`}
+                      onClick={() => toggleCategory(cat.name)}
+                    >
+                      <span className="ac-cat-icon">{cat.icon}</span>
+                      <span className="ac-cat-name">{cat.name}</span>
+                      {active && <div className="ac-cat-check">✓</div>}
+                    </button>
+                  );
+                })}
+              </div>
 
-                {/* Clear Filters Button */}
+              {hasFilters && (
                 <button
-                  onClick={clearAllFilters}
-                  className="w-full py-3 bg-white/10 text-gray-300 rounded-xl font-medium hover:bg-white/20 transition-colors border border-white/10"
+                  onClick={() => { clearAll(); setIsFilterOpen(false); }}
+                  style={{ marginTop: 20, width: '100%', padding: '11px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, color: 'rgba(255,255,255,.5)', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                 >
                   Clear All Filters
                 </button>
-              </div>
+              )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add custom animations */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
-        }
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+          </>
+        )}
+      </div>
+    </>
   );
 };
 
