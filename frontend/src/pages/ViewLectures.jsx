@@ -121,14 +121,13 @@ const ViewLectures = () => {
 
   // ── Certificate Generator ──
   const generateCertificate = () => {
-    console.log("UserData:", userData);
     setCertGenerating(true);
     const canvas = document.createElement('canvas');
     canvas.width  = 1200;
     canvas.height = 850;
     const ctx = canvas.getContext('2d');
 
-    const studentName  =  userData?.name?.trim() || '';
+    const studentName  =  userData?.user?.name?.trim() || '';
     const courseTitle  = selectedCourse?.title || 'Course';
     const instructorName = creatorData?.name || 'Instructor';
     const dateStr      = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
