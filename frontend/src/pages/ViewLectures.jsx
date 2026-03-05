@@ -37,9 +37,7 @@ const ViewLectures = () => {
   const markWatched = async (lectureId, lectureTitle) => {
     if (watchedRef.current[lectureId]) return; // already done
     console.log('🎬 markWatched triggered for:', lectureTitle, '| quizState:', quizState);
-    if (quizState !== 'idle') return; // prevent duplicate calls
-
-    // Trigger AI quiz FIRST — only mark complete after passing
+    if (quizState !== 'idle') return; 
     setQuizLectureId(lectureId);
     setQuizState('loading');
     setQuizAnswers({});
