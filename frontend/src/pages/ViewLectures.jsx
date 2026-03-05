@@ -121,6 +121,7 @@ const ViewLectures = () => {
 
   // ── Certificate Generator ──
   const generateCertificate = () => {
+    console.log("UserData:", userData);
     setCertGenerating(true);
     const canvas = document.createElement('canvas');
     canvas.width  = 1200;
