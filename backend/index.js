@@ -8,6 +8,7 @@ import userRoute from './route/userRoute.js';
 import courseRouter from './route/courseRoute.js';
 import paymentRouter from './route/paymentRoute.js';
 import reviewRouter from './route/reviewRoute.js';
+import quizRoute from './route/quizRoute.js';
 
 dotenv.config();
 
@@ -24,6 +25,8 @@ app.use('/api/user',userRoute);
 app.use('/api/course',courseRouter);
 app.use('/api/payment',paymentRouter);
 app.use('/api/review',reviewRouter)
+app.use('/api/quiz', quizRoute);
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
