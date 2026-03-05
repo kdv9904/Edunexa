@@ -1,6 +1,3 @@
-// route/quizRoute.js
-// Uses Google Gemini API — completely FREE tier available
-// Get your key at: https://aistudio.google.com/app/apikey (no credit card)
 import express from 'express';
 
 const router = express.Router();
@@ -12,9 +9,9 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ message: 'lectureTitle is required' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ message: 'GEMINI_API_KEY not set in environment' });
+    return res.status(500).json({ message: 'GROQ_API_KEY not set in environment' });
   }
 
   const prompt = `You are a quiz generator for an online learning platform.
@@ -24,10 +21,10 @@ Generate exactly 4 multiple choice questions to test understanding of a lecture 
 Rules:
 - Each question must have exactly 4 options
 - Only one option is correct
-- Questions should test conceptual understanding, not trivia
+- Questions should test conceptual understanding
 - Keep questions concise and clear
 
-Respond ONLY with a valid JSON array. No markdown, no explanation, no backticks, no code fences. Just raw JSON.
+Respond ONLY with a valid JSON array. No markdown. No backticks. No explanation. Just raw JSON.
 
 Example:
 [{"question":"What is X?","options":["A","B","C","D"],"correctIndex":0},{"question":"Why Y?","options":["A","B","C","D"],"correctIndex":2}]
@@ -35,31 +32,32 @@ Example:
 correctIndex is 0-based.`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          }
-        })
-      }
-    );
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',   // free, fast, no billing needed
+        messages: [
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+      })
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Gemini API error:', data);
+      console.error('Groq API error:', data);
       return res.status(500).json({
-        message: data?.error?.message || 'Gemini API error',
+        message: data?.error?.message || 'Groq API error',
       });
     }
 
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '[]';
+    const raw = data?.choices?.[0]?.message?.content?.trim() || '[]';
     const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
 
     let questions;
