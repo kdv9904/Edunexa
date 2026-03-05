@@ -46,50 +46,92 @@ export default function ExploreCourses() {
       <style>{`
         .ec-root {
           background: #07090f;
-          padding: 30px 24px;
+          padding: 24px 16px;
           font-family: 'DM Sans', sans-serif;
         }
         .ec-inner { max-width: 1160px; margin: 0 auto; }
 
         /* Header row */
         .ec-header {
-          display: flex; flex-direction: column;
-          align-items: flex-start; gap: 32px;
-          margin-bottom: 48px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 32px;
         }
         @media (min-width: 900px) {
-          .ec-header { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+          .ec-header {
+            flex-direction: row;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 32px;
+            margin-bottom: 48px;
+          }
+          .ec-root { padding: 30px 24px; }
         }
+
         .ec-eyebrow {
           font-size: 11px; font-weight: 600; color: #10b981;
-          letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+          letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
         }
         .ec-title {
           font-family: 'Playfair Display', serif;
-          font-size: clamp(28px, 4vw, 44px); font-weight: 700;
-          color: #fff; line-height: 1.15; margin-bottom: 14px;
+          font-size: clamp(24px, 6vw, 44px);
+          font-weight: 700;
+          color: #fff; line-height: 1.15; margin-bottom: 10px;
         }
         .ec-title em { color: #10b981; font-style: italic; }
-        .ec-sub { font-size: 14px; color: rgba(255,255,255,.4); line-height: 1.7; max-width: 420px; }
+        .ec-sub {
+          font-size: 13px; color: rgba(255,255,255,.4);
+          line-height: 1.7; max-width: 420px;
+        }
 
         .ec-cta-btn {
-          flex-shrink: 0;
+          width: 100%;
           padding: 13px 28px; border-radius: 12px;
           background: #10b981; color: #07090f;
           border: none; cursor: pointer;
           font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
-          display: flex; align-items: center; gap: 8px;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
           transition: background .2s, transform .15s, box-shadow .2s;
           white-space: nowrap;
         }
-        .ec-cta-btn:hover { background: #0ea472; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(16,185,129,.3); }
+        @media (min-width: 900px) {
+          .ec-cta-btn {
+            width: auto;
+            flex-shrink: 0;
+          }
+        }
+        .ec-cta-btn:hover {
+          background: #0ea472;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 28px rgba(16,185,129,.3);
+        }
 
         /* Filter tabs */
         .ec-filters {
-          display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 36px;
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 8px;
+          margin-bottom: 24px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          padding-bottom: 4px;
         }
+        .ec-filters::-webkit-scrollbar { display: none; }
+
+        @media (min-width: 900px) {
+          .ec-filters {
+            flex-wrap: wrap;
+            overflow-x: visible;
+            margin-bottom: 36px;
+          }
+        }
+
         .ec-filter {
-          padding: 7px 18px; border-radius: 100px;
+          flex-shrink: 0;
+          padding: 7px 16px; border-radius: 100px;
           background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
           color: rgba(255,255,255,.45); font-size: 13px; font-weight: 500;
           cursor: pointer; font-family: 'DM Sans', sans-serif;
@@ -101,65 +143,116 @@ export default function ExploreCourses() {
           color: #07090f; font-weight: 700;
         }
 
-        /* Grid */
+        /* Grid — 2 columns on mobile, scales up */
         .ec-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-}
+          display: grid;
+          gap: 12px;
+          grid-template-columns: repeat(2, 1fr);
+        }
+        @media (min-width: 480px) {
+          .ec-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        }
+        @media (min-width: 640px) {
+          .ec-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        }
+        @media (min-width: 900px) {
+          .ec-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        }
+        @media (min-width: 1100px) {
+          .ec-grid { grid-template-columns: repeat(5, 1fr); }
+        }
 
         /* Card */
         .ec-card {
           position: relative;
           background: rgba(255,255,255,.03);
           border: 1px solid rgba(255,255,255,.07);
-          border-radius: 18px; padding: 26px 22px;
+          border-radius: 16px;
+          padding: 18px 14px;
           cursor: pointer;
           transition: border-color .3s, transform .3s, background .3s;
           overflow: hidden;
         }
+        @media (min-width: 640px) {
+          .ec-card { border-radius: 18px; padding: 22px 18px; }
+        }
+        @media (min-width: 900px) {
+          .ec-card { padding: 26px 22px; }
+        }
+
         .ec-card::before {
           content: '';
-          position: absolute; inset: 0; border-radius: 18px;
+          position: absolute; inset: 0; border-radius: inherit;
           background: var(--accent-color);
           opacity: 0; transition: opacity .3s;
         }
-        .ec-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
+        .ec-card:hover { transform: translateY(-4px); border-color: var(--accent-color); }
         .ec-card:hover::before { opacity: .05; }
 
         .ec-card-icon {
-          width: 48px; height: 48px; border-radius: 12px;
+          width: 40px; height: 40px; border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          font-size: 20px; color: #fff; margin-bottom: 16px;
+          font-size: 17px; color: #fff; margin-bottom: 12px;
           background: var(--accent-color);
           opacity: .9;
           transition: transform .3s;
         }
+        @media (min-width: 640px) {
+          .ec-card-icon { width: 44px; height: 44px; font-size: 19px; border-radius: 11px; }
+        }
+        @media (min-width: 900px) {
+          .ec-card-icon { width: 48px; height: 48px; font-size: 20px; border-radius: 12px; margin-bottom: 16px; }
+        }
         .ec-card:hover .ec-card-icon { transform: scale(1.1); }
 
         .ec-card-title {
-          font-size: 14px; font-weight: 700; color: #fff;
-          margin-bottom: 6px; line-height: 1.3;
+          font-size: 12px; font-weight: 700; color: #fff;
+          margin-bottom: 4px; line-height: 1.3;
         }
+        @media (min-width: 640px) {
+          .ec-card-title { font-size: 13px; margin-bottom: 5px; }
+        }
+        @media (min-width: 900px) {
+          .ec-card-title { font-size: 14px; margin-bottom: 6px; }
+        }
+
         .ec-card-desc {
-          font-size: 12px; color: rgba(255,255,255,.35);
-          line-height: 1.6; margin-bottom: 16px;
+          font-size: 11px; color: rgba(255,255,255,.35);
+          line-height: 1.5; margin-bottom: 12px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
+        @media (min-width: 640px) {
+          .ec-card-desc { font-size: 12px; margin-bottom: 14px; }
+        }
+        @media (min-width: 900px) {
+          .ec-card-desc { margin-bottom: 16px; }
+        }
+
         .ec-card-footer {
           display: flex; align-items: center; justify-content: space-between;
         }
         .ec-card-count {
-          font-size: 11px; font-weight: 600;
+          font-size: 10px; font-weight: 600;
           color: var(--accent-color);
           background: rgba(255,255,255,.06);
-          padding: 3px 10px; border-radius: 100px;
+          padding: 3px 8px; border-radius: 100px;
         }
+        @media (min-width: 640px) {
+          .ec-card-count { font-size: 11px; padding: 3px 10px; }
+        }
+
         .ec-card-arrow {
-          width: 26px; height: 26px; border-radius: 50%;
+          width: 24px; height: 24px; border-radius: 50%;
           border: 1px solid rgba(255,255,255,.1);
           display: flex; align-items: center; justify-content: center;
-          color: rgba(255,255,255,.3); font-size: 11px;
+          color: rgba(255,255,255,.3); font-size: 10px;
           transition: all .2s;
+        }
+        @media (min-width: 640px) {
+          .ec-card-arrow { width: 26px; height: 26px; font-size: 11px; }
         }
         .ec-card:hover .ec-card-arrow {
           border-color: var(--accent-color);
@@ -169,8 +262,11 @@ export default function ExploreCourses() {
 
         /* Bottom strip */
         .ec-bottom {
-          margin-top: 48px; text-align: center;
-          display: flex; flex-direction: column; align-items: center; gap: 14px;
+          margin-top: 32px; text-align: center;
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+        }
+        @media (min-width: 900px) {
+          .ec-bottom { margin-top: 48px; gap: 14px; }
         }
         .ec-count-line { font-size: 13px; color: rgba(255,255,255,.3); }
         .ec-count-line strong { color: rgba(255,255,255,.6); }
