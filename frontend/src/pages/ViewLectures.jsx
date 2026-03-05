@@ -36,6 +36,8 @@ const ViewLectures = () => {
   // ── Mark watched + trigger quiz ──
   const markWatched = async (lectureId, lectureTitle) => {
     if (watchedRef.current[lectureId]) return; // already done
+    console.log('🎬 markWatched triggered for:', lectureTitle, '| quizState:', quizState);
+    if (quizState !== 'idle') return; // prevent duplicate calls
 
     // Trigger AI quiz FIRST — only mark complete after passing
     setQuizLectureId(lectureId);
@@ -49,10 +51,11 @@ const ViewLectures = () => {
         { lectureTitle },
         { withCredentials: true }
       );
+      console.log('✅ Quiz response:', res.data);
       setQuizQuestions(res.data.questions || []);
       setQuizState('active');
     } catch (err) {
-      console.error('Quiz generation failed:', err);
+      console.error('❌ Quiz generation failed:', err.response?.data || err.message);
       // Fallback: mark complete anyway if quiz fails
       confirmComplete(lectureId);
       setQuizState('idle');

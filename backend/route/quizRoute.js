@@ -1,9 +1,10 @@
+// route/quizRoute.js
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 
 const router = express.Router();
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ✅ Client created INSIDE the handler so process.env is already loaded
 router.post('/generate', async (req, res) => {
   const { lectureTitle } = req.body;
 
@@ -12,8 +13,11 @@ router.post('/generate', async (req, res) => {
   }
 
   try {
+    // Instantiate here — dotenv is guaranteed to have run by now
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',   // fast + cheap for quizzes
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       messages: [
         {
@@ -28,16 +32,10 @@ Rules:
 - Questions should test conceptual understanding, not trivia
 - Keep questions concise and clear
 
-Respond ONLY with a valid JSON array. No markdown, no explanation, no backticks.
+Respond ONLY with a valid JSON array. No markdown, no explanation, no backticks, no code fences.
 
-Format:
-[
-  {
-    "question": "Question text here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctIndex": 0
-  }
-]
+Example output:
+[{"question":"What is X?","options":["A","B","C","D"],"correctIndex":0},{"question":"Why Y?","options":["A","B","C","D"],"correctIndex":2}]
 
 correctIndex is 0-based (0 = first option, 1 = second, etc.)`
         }
@@ -45,9 +43,7 @@ correctIndex is 0-based (0 = first option, 1 = second, etc.)`
     });
 
     const raw = message.content[0]?.text?.trim() || '[]';
-
-    // Strip markdown code fences if model adds them
-    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
 
     let questions;
     try {
@@ -57,13 +53,13 @@ correctIndex is 0-based (0 = first option, 1 = second, etc.)`
       return res.status(500).json({ message: 'Failed to parse quiz response' });
     }
 
-    // Validate structure
     if (!Array.isArray(questions) || questions.length === 0) {
       return res.status(500).json({ message: 'Invalid quiz format returned' });
     }
 
     const valid = questions.filter(q =>
-      q.question && Array.isArray(q.options) &&
+      q.question &&
+      Array.isArray(q.options) &&
       q.options.length === 4 &&
       typeof q.correctIndex === 'number'
     );
@@ -75,7 +71,7 @@ correctIndex is 0-based (0 = first option, 1 = second, etc.)`
     return res.json({ questions: valid });
 
   } catch (error) {
-    console.error('Quiz generation error:', error);
+    console.error('Quiz generation error:', error.message);
     return res.status(500).json({ message: 'Quiz generation failed', error: error.message });
   }
 });
