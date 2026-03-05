@@ -1,230 +1,325 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
 import { serverUrl } from '../App';
 import { FaArrowLeftLong } from 'react-icons/fa6';
-import { FaPlayCircle } from 'react-icons/fa';
+import { FaPlayCircle, FaCheckCircle } from 'react-icons/fa';
 
 const ViewLectures = () => {
-    const { courseId } = useParams();
-    const { creatorCourseData } = useSelector(state => state.course)
-    const { userData } = useSelector(state => state.user)
-    const selectedCourse = creatorCourseData?.find((course) => course._id === courseId)
-    const [creatorData, setCreatorData] = useState(null);
-    const [selectedLecture, setSelectedLecture] = useState(null);
-    const [lectures, setLectures] = useState([]);
-    const navigate = useNavigate();
+  const { courseId } = useParams();
+  const { creatorCourseData } = useSelector(state => state.course);
+  const { userData } = useSelector(state => state.user);
+  const selectedCourse = creatorCourseData?.find(c => c._id === courseId);
+  const navigate = useNavigate();
 
-    // Fetch lectures for the course
-    useEffect(() => {
-        const fetchLectures = async () => {
-            if (!courseId) return;
-            
-            try {
-                const res = await axios.get(
-                    `${serverUrl}/api/course/courselecture/${courseId}`,
-                    { withCredentials: true }
-                );
-                
-                if (res.data.lectures && res.data.lectures.length > 0) {
-                    setLectures(res.data.lectures);
-                    setSelectedLecture(res.data.lectures[0]);
-                }
-            } catch (error) {
-                console.log("❌ Error fetching lectures:", error);
-            }
-        };
+  const [creatorData, setCreatorData]       = useState(null);
+  const [selectedLecture, setSelectedLecture] = useState(null);
+  const [lectures, setLectures]             = useState([]);
 
-        fetchLectures();
-    }, [courseId]);
+  // ── Video completion tracking ──
+  const [watchedLectures, setWatchedLectures] = useState(() => {
+    try { const s = localStorage.getItem(`watched_${courseId}`); return s ? JSON.parse(s) : {}; }
+    catch { return {}; }
+  });
+  const videoRef    = useRef(null);
+  const watchedRef  = useRef(watchedLectures);
 
-    // Fetch creator data
-    useEffect(() => {
-        const handleCreator = async () => {
-            const creatorId = selectedCourse?.creator?._id || selectedCourse?.creator;
-            if (!creatorId) return;
+  const markWatched = (id) => {
+    if (watchedRef.current[id]) return;
+    const next = { ...watchedRef.current, [id]: true };
+    watchedRef.current = next;
+    setWatchedLectures(next);
+    localStorage.setItem(`watched_${courseId}`, JSON.stringify(next));
+  };
 
-            try {
-                const res = await axios.post(
-                    `${serverUrl}/api/course/creator`,
-                    { userId: creatorId },
-                    { withCredentials: true }
-                );
-                setCreatorData(res.data);
-            } catch (error) {
-                console.log("❌ Error fetching creator:", error);
-            }
-        };
+  const handleTimeUpdate = () => {
+    const v = videoRef.current;
+    if (!v || !selectedLecture) return;
+    if (v.duration > 0 && v.currentTime / v.duration >= 0.9) markWatched(selectedLecture._id);
+  };
 
-        if (selectedCourse) {
-            handleCreator();
+  const completedCount = Object.values(watchedLectures).filter(Boolean).length;
+  const totalLectures  = lectures.length;
+  const progressPct    = totalLectures > 0 ? Math.round((completedCount / totalLectures) * 100) : 0;
+
+  // ── Fetch lectures ──
+  useEffect(() => {
+    const fetch = async () => {
+      if (!courseId) return;
+      try {
+        const res = await axios.get(`${serverUrl}/api/course/courselecture/${courseId}`, { withCredentials: true });
+        if (res.data.lectures?.length > 0) {
+          setLectures(res.data.lectures);
+          setSelectedLecture(res.data.lectures[0]);
         }
-    }, [selectedCourse]);
+      } catch (e) { console.log(e); }
+    };
+    fetch();
+  }, [courseId]);
 
-    // If course not found, show error
-    if (!selectedCourse) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-3xl text-gray-400">📚</span>
-                    </div>
-                    <h3 className="text-2xl font-semibold text-gray-600 mb-4">Course Not Found</h3>
-                    <p className="text-gray-500 mb-6 max-w-md">The course you're looking for doesn't exist or has been removed.</p>
-                    <button 
-                        onClick={() => navigate("/")}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105"
-                    >
-                        Browse Courses
-                    </button>
-                </div>
+  // ── Fetch creator ──
+  useEffect(() => {
+    const fetch = async () => {
+      const id = selectedCourse?.creator?._id || selectedCourse?.creator;
+      if (!id) return;
+      try {
+        const res = await axios.post(`${serverUrl}/api/course/creator`, { userId: id }, { withCredentials: true });
+        setCreatorData(res.data);
+      } catch {}
+    };
+    if (selectedCourse) fetch();
+  }, [selectedCourse]);
+
+  if (!selectedCourse) return (
+    <div style={{ minHeight: '100vh', background: '#07090f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 48, opacity: .2, marginBottom: 16 }}>📚</div>
+        <h3 style={{ color: '#fff', fontSize: 20, marginBottom: 12 }}>Course Not Found</h3>
+        <button onClick={() => navigate('/')} style={{ padding: '10px 24px', background: '#10b981', border: 'none', borderRadius: 10, color: '#07090f', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+          Browse Courses
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+        .vl-root { min-height: 100vh; background: #07090f; font-family: 'DM Sans', sans-serif; position: relative; overflow-x: hidden; padding: 36px 24px 72px; }
+        .vl-glow1 { position: fixed; width: 700px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(16,185,129,.055) 0%, transparent 70%); top: -180px; right: -180px; pointer-events: none; z-index: 0; }
+        .vl-glow2 { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,.05) 0%, transparent 70%); bottom: -120px; left: -120px; pointer-events: none; z-index: 0; }
+        .vl-grid { position: fixed; inset: 0; opacity: .02; pointer-events: none; z-index: 0; background-image: linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px); background-size: 56px 56px; }
+        .vl-inner { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; }
+
+        /* Back */
+        .vl-back { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500; cursor: pointer; margin-bottom: 24px; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+        .vl-back:hover { color: #fff; background: rgba(255,255,255,.09); }
+
+        /* Top strip */
+        .vl-topstrip { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .vl-course-title { font-family: 'Playfair Display', serif; font-size: clamp(20px, 2.2vw, 26px); font-weight: 700; color: #fff; margin: 0; }
+        .vl-course-title em { color: #10b981; font-style: italic; }
+        .vl-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+        .vl-badge { font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 100px; letter-spacing: .5px; }
+        .vl-badge-cat { background: rgba(99,102,241,.1); color: #818cf8; border: 1px solid rgba(99,102,241,.2); }
+        .vl-badge-lvl { background: rgba(16,185,129,.1); color: #10b981; border: 1px solid rgba(16,185,129,.2); }
+
+        /* Progress bar */
+        .vl-progress-wrap { margin-bottom: 20px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 13px 18px; }
+        .vl-progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .vl-progress-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .8px; }
+        .vl-progress-pct { font-size: 12px; font-weight: 700; color: #10b981; }
+        .vl-progress-track { height: 4px; background: rgba(255,255,255,.07); border-radius: 100px; overflow: hidden; }
+        .vl-progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 100px; transition: width .4s ease; }
+        .vl-progress-sub { font-size: 11px; color: rgba(255,255,255,.22); margin-top: 7px; }
+
+        /* Main layout */
+        .vl-layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+        @media(max-width:900px){ .vl-layout { grid-template-columns: 1fr; } }
+
+        /* Cards */
+        .vl-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; overflow: hidden; }
+        .vl-card-body { padding: 22px; }
+
+        /* Video */
+        .vl-video-wrap { aspect-ratio: 16/9; background: #000; position: relative; }
+        .vl-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .vl-video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+
+        /* Lecture info */
+        .vl-lec-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #fff; margin: 0 0 6px; }
+        .vl-completed-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.25); padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; color: #10b981; font-family: 'DM Sans', sans-serif; }
+
+        /* Divider */
+        .vl-divider { height: 1px; background: rgba(255,255,255,.06); margin: 20px 0; }
+
+        /* Creator */
+        .vl-creator { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .vl-creator-avatar { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); flex-shrink: 0; }
+        .vl-creator-placeholder { width: 48px; height: 48px; border-radius: 12px; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.2); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #10b981; flex-shrink: 0; }
+        .vl-creator-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+        .vl-creator-email { font-size: 11px; color: rgba(255,255,255,.3); }
+        .vl-creator-desc { font-size: 13px; color: rgba(255,255,255,.4); line-height: 1.6; margin-top: 12px; }
+
+        /* Sidebar */
+        .vl-sidebar-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 20px; position: sticky; top: 24px; }
+        .vl-sidebar-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
+        .vl-sidebar-sub { font-size: 11px; color: rgba(255,255,255,.2); margin-bottom: 16px; }
+
+        .vl-lec-list { display: flex; flex-direction: column; gap: 6px; max-height: 520px; overflow-y: auto; padding-right: 3px; }
+        .vl-lec-list::-webkit-scrollbar { width: 3px; }
+        .vl-lec-list::-webkit-scrollbar-thumb { background: rgba(16,185,129,.3); border-radius: 100px; }
+
+        .vl-lec-btn { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border-radius: 11px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); cursor: pointer; transition: all .17s; text-align: left; width: 100%; }
+        .vl-lec-btn.active { border-color: rgba(16,185,129,.3); background: rgba(16,185,129,.07); }
+        .vl-lec-btn:not(.active):hover { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04); }
+
+        .vl-lec-num { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; background: rgba(255,255,255,.06); color: rgba(255,255,255,.35); transition: all .17s; }
+        .vl-lec-btn.active .vl-lec-num { background: rgba(16,185,129,.15); color: #10b981; }
+        .vl-lec-btn-name { flex: 1; font-size: 12px; font-weight: 500; color: rgba(255,255,255,.55); line-height: 1.4; }
+        .vl-lec-btn.active .vl-lec-btn-name { color: #fff; font-weight: 600; }
+
+        /* Watched tick animation */
+        .vl-tick { width: 20px; height: 20px; border-radius: 50%; background: rgba(16,185,129,.12); border: 1.5px solid rgba(16,185,129,.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0; animation: tickPop .3s ease; }
+        @keyframes tickPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Empty state */
+        .vl-empty { text-align: center; padding: 40px 20px; }
+        .vl-empty-icon { font-size: 32px; opacity: .2; margin-bottom: 10px; }
+        .vl-empty-title { font-size: 14px; color: rgba(255,255,255,.25); }
+        .vl-empty-sub { font-size: 12px; color: rgba(255,255,255,.15); margin-top: 4px; }
+      `}</style>
+
+      <div className="vl-root">
+        <div className="vl-glow1" /><div className="vl-glow2" /><div className="vl-grid" />
+
+        <div className="vl-inner">
+
+          {/* Back */}
+          <button className="vl-back" onClick={() => navigate('/')}>
+            <FaArrowLeftLong size={11} /> Back to Home
+          </button>
+
+          {/* Top strip */}
+          <div className="vl-topstrip">
+            <h1 className="vl-course-title">
+              {selectedCourse.title?.split(' ').slice(0, -1).join(' ') || selectedCourse.title}{' '}
+              <em>{selectedCourse.title?.split(' ').slice(-1)[0]}</em>
+            </h1>
+            <div className="vl-badges">
+              {selectedCourse.category && <span className="vl-badge vl-badge-cat">{selectedCourse.category}</span>}
+              {selectedCourse.level    && <span className="vl-badge vl-badge-lvl">{selectedCourse.level}</span>}
             </div>
-        );
-    }
+          </div>
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10 p-6">
-            {/* Back Button */}
-            <div className="max-w-7xl mx-auto mb-6">
-                <button 
-                    onClick={() => navigate("/")}
-                    className="group flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 hover:border-blue-300"
-                >
-                    <FaArrowLeftLong className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors"/>
-                    <span className="text-gray-700 font-medium group-hover:text-blue-600 transition-colors">Back to Home</span>
-                </button>
+          {/* Progress */}
+          {totalLectures > 0 && (
+            <div className="vl-progress-wrap">
+              <div className="vl-progress-top">
+                <span className="vl-progress-label">Your Progress</span>
+                <span className="vl-progress-pct">{progressPct}%</span>
+              </div>
+              <div className="vl-progress-track">
+                <div className="vl-progress-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+              <div className="vl-progress-sub">
+                {completedCount} of {totalLectures} lectures completed
+                {completedCount === totalLectures && totalLectures > 0 && ' 🎉 Course Complete!'}
+              </div>
             </div>
+          )}
 
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
-                {/* Main Content */}
-                <div className="w-full lg:w-2/3 bg-white rounded-3xl shadow-xl p-8 border border-gray-200">
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                            {selectedCourse?.title || "Course Title Not Available"}
-                        </h2>
-                        <div className='mt-4 flex gap-6 text-sm font-medium'>
-                            <span className="px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 text-gray-700 rounded-xl border border-blue-100">
-                                Category: {selectedCourse?.category}
-                            </span>
-                            <span className="px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 text-gray-700 rounded-xl border border-green-100">
-                                Level: {selectedCourse?.level}
-                            </span>
-                        </div>
-                    </div>
+          {/* Main layout */}
+          <div className="vl-layout">
 
-                    {/* Video Player */}
-                    <div className='aspect-video bg-black rounded-2xl overflow-hidden mb-6 border-2 border-gray-300 shadow-lg'>
-                        {selectedLecture?.videoUrl ? (
-                            <video className='w-full h-full object-cover' src={selectedLecture?.videoUrl} controls />
-                        ) : (
-                            <div className='flex items-center justify-center h-full text-white'>
-                                <div className="text-center p-8">
-                                    <FaPlayCircle className="text-6xl mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium mb-2">
-                                        {lectures.length > 0 ? "Video Loading..." : "No Lectures Available"}
-                                    </p>
-                                    <p className="text-sm opacity-75">
-                                        {lectures.length > 0 ? "Video content is being prepared" : "Check back later for course content"}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Lecture Title */}
-                    <div className='mt-6'>
-                      <h2 className='text-2xl font-semibold text-gray-800'>
-                        {selectedLecture?.lectureTitle || "Select a Lecture"}
-                      </h2>
-                    </div>
+            {/* Left: video + info */}
+            <div className="vl-card">
+              {/* Video */}
+              <div className="vl-video-wrap">
+                {selectedLecture?.videoUrl ? (
+                  <video
+                    ref={videoRef}
+                    src={selectedLecture.videoUrl}
+                    controls
+                    autoPlay={false}
+                    onTimeUpdate={handleTimeUpdate}
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                ) : (
+                  <div className="vl-video-placeholder">
+                    <FaPlayCircle size={52} color="rgba(255,255,255,.12)" />
+                    <p style={{ color: 'rgba(255,255,255,.3)', fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                      {lectures.length > 0 ? 'Video being prepared' : 'No lectures available'}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-                    {/* Creator Info Section */}
-                    <div className="mt-8 border-t border-gray-200 pt-6">
-                        <div className="flex items-center gap-6 mb-4">
-                            {creatorData?.photoUrl ? (
-                                <img
-                                    src={creatorData.photoUrl}
-                                    alt={creatorData.name}
-                                    className="w-16 h-16 rounded-2xl object-cover shadow-lg border border-gray-300"
-                                />
-                            ) : (
-                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-2xl shadow-lg">
-                                    {creatorData?.name?.charAt(0)?.toUpperCase() || "U"}
-                                </div>
-                            )}
-                            <div>
-                                <h3 className="text-xl font-semibold text-gray-900">
-                                    {creatorData?.name || selectedCourse?.creatorName || "Unknown Creator"}
-                                </h3>
-                                {creatorData?.email && (
-                                    <p className="text-gray-500 text-sm mt-1">{creatorData.email}</p>
-                                )}
-                            </div>
-                        </div>
-                        
-                        {creatorData?.description && (
-                            <p className="text-gray-600 mb-3 leading-relaxed">
-                                {creatorData.description}
-                            </p>
-                        )}
-                        {selectedCourse?.description && (
-                            <p className="text-gray-600 leading-relaxed">
-                                {selectedCourse.description}
-                            </p>
-                        )}
+              <div className="vl-card-body">
+                {/* Lecture title + completed badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <h2 className="vl-lec-title">
+                    {selectedLecture?.lectureTitle || 'Select a lecture'}
+                  </h2>
+                  {selectedLecture && watchedLectures[selectedLecture._id] && (
+                    <div className="vl-completed-pill">
+                      <FaCheckCircle size={10} /> Completed
                     </div>
+                  )}
                 </div>
 
-                {/* Lectures Sidebar */}
-                <div className="w-full lg:w-1/3">
-                    <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-200 h-fit sticky top-6">
-                        <h2 className="text-xl font-bold mb-6 text-gray-800 border-b border-gray-200 pb-4">Course Lectures</h2>
-                        <div className='flex flex-col gap-3 max-h-96 overflow-y-auto'>
-                             {lectures.length > 0 ? 
-                               (lectures.map((lecture, index)=>(
-                                   <button 
-                                     key={lecture._id || index}
-                                     onClick={() => setSelectedLecture(lecture)}
-                                     className={`p-4 text-left rounded-xl border-2 transition-all duration-300 flex items-center justify-between group ${
-                                         selectedLecture?._id === lecture._id 
-                                             ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300 shadow-md' 
-                                             : 'border-gray-200 hover:bg-gray-50 hover:border-blue-200 hover:shadow-lg'
-                                     }`}
-                                   >
-                                       <div className="flex items-center gap-3">
-                                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                                               selectedLecture?._id === lecture._id
-                                                   ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                                                   : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'
-                                           } transition-all duration-300`}>
-                                               <span className="font-semibold text-sm">{index + 1}</span>
-                                           </div>
-                                           <span className="font-medium text-gray-800 text-left flex-1">
-                                               {lecture.lectureTitle}
-                                           </span>
-                                       </div>
-                                       <FaPlayCircle className={`text-lg transition-all duration-300 ${
-                                           selectedLecture?._id === lecture._id 
-                                               ? 'text-blue-600 scale-110' 
-                                               : 'text-gray-400 group-hover:text-blue-500'
-                                       }`}/>
-                                   </button>   
-                               )))
-                               :
-                               <div className="text-center py-8">
-                                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                       <FaPlayCircle className="text-gray-400 text-xl" />
-                                   </div>
-                                   <p className='text-gray-500 text-lg'>No Lectures Available</p>
-                                   <p className='text-gray-400 text-sm mt-1'>Check back later for course content</p>
-                               </div>}
-                        </div>
+                <div className="vl-divider" />
+
+                {/* Creator */}
+                <div className="vl-creator">
+                  {creatorData?.photoUrl ? (
+                    <img src={creatorData.photoUrl} alt={creatorData.name} className="vl-creator-avatar" />
+                  ) : (
+                    <div className="vl-creator-placeholder">
+                      {creatorData?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
+                  )}
+                  <div>
+                    <div className="vl-creator-name">{creatorData?.name || 'Instructor'}</div>
+                    {creatorData?.email && <div className="vl-creator-email">{creatorData.email}</div>}
+                  </div>
                 </div>
+
+                {(creatorData?.description || selectedCourse?.description) && (
+                  <div className="vl-creator-desc">
+                    {creatorData?.description || selectedCourse?.description}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Right: lecture list */}
+            <div className="vl-sidebar-card">
+              <div className="vl-sidebar-title">Course Lectures</div>
+              <div className="vl-sidebar-sub">{totalLectures} lecture{totalLectures !== 1 ? 's' : ''}</div>
+
+              {lectures.length > 0 ? (
+                <div className="vl-lec-list">
+                  {lectures.map((lec, i) => {
+                    const isActive  = selectedLecture?._id === lec._id;
+                    const isWatched = watchedLectures[lec._id];
+                    return (
+                      <button
+                        key={lec._id || i}
+                        className={`vl-lec-btn${isActive ? ' active' : ''}`}
+                        onClick={() => setSelectedLecture(lec)}
+                      >
+                        <div className="vl-lec-num">{i + 1}</div>
+                        <span className="vl-lec-btn-name">{lec.lectureTitle}</span>
+                        {isWatched && (
+                          <div className="vl-tick">
+                            <FaCheckCircle size={11} color="#10b981" />
+                          </div>
+                        )}
+                        {!isWatched && (
+                          <FaPlayCircle size={13} color={isActive ? '#10b981' : 'rgba(255,255,255,.2)'} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="vl-empty">
+                  <div className="vl-empty-icon">📹</div>
+                  <div className="vl-empty-title">No lectures yet</div>
+                  <div className="vl-empty-sub">Check back later</div>
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
-    )
-}
+      </div>
+    </>
+  );
+};
 
-export default ViewLectures
+export default ViewLectures;
