@@ -1,9 +1,10 @@
+// route/quizRoute.js
 import express from 'express';
 
 const router = express.Router();
 
 router.post('/generate', async (req, res) => {
-  const { lectureTitle } = req.body;
+  const { lectureTitle, courseCategory } = req.body;
 
   if (!lectureTitle?.trim()) {
     return res.status(400).json({ message: 'lectureTitle is required' });
@@ -14,22 +15,18 @@ router.post('/generate', async (req, res) => {
     return res.status(500).json({ message: 'GROQ_API_KEY not set in environment' });
   }
 
-  const prompt = `You are a quiz generator for an online learning platform.
+  const prompt = `You are an expert educator creating a quiz specifically about: "${lectureTitle}"${courseCategory ? ` (from a ${courseCategory} course)` : ''}.
 
-Generate exactly 4 multiple choice questions to test understanding of a lecture titled: "${lectureTitle}"
+IMPORTANT: Every question AND every answer option MUST be directly and specifically about "${lectureTitle}". Do NOT generate generic or unrelated questions.
 
-Rules:
-- Each question must have exactly 4 options
-- Only one option is correct
-- Questions should test conceptual understanding
-- Keep questions concise and clear
+Generate exactly 4 multiple choice questions. Each question must:
+- Be specifically about concepts, syntax, features, or use cases from "${lectureTitle}"
+- Have 4 answer options that are all plausible but only one is correct
+- Test actual understanding of "${lectureTitle}"
 
-Respond ONLY with a valid JSON array. No markdown. No backticks. No explanation. Just raw JSON.
+Output ONLY a raw JSON array. Zero markdown. Zero explanation. Zero backticks. Start directly with [ and end with ].
 
-Example:
-[{"question":"What is X?","options":["A","B","C","D"],"correctIndex":0},{"question":"Why Y?","options":["A","B","C","D"],"correctIndex":2}]
-
-correctIndex is 0-based.`;
+[{"question":"<specific question about ${lectureTitle}>","options":["<wrong answer>","<correct answer>","<wrong answer>","<wrong answer>"],"correctIndex":1},{"question":"...","options":["...","...","...","..."],"correctIndex":0}]`;
 
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -39,11 +36,15 @@ correctIndex is 0-based.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',   // free, fast, no billing needed
+        model: 'llama-3.3-70b-versatile',
         messages: [
+          {
+            role: 'system',
+            content: `You are a precise quiz generator. You ONLY generate questions that are specifically about the exact topic given. You never generate off-topic or generic questions. You always respond with raw JSON only — no markdown, no backticks, no explanation.`
+          },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        temperature: 0.4,  // lower = more focused, less random
         max_tokens: 1024,
       })
     });
@@ -52,13 +53,18 @@ correctIndex is 0-based.`;
 
     if (!response.ok) {
       console.error('Groq API error:', data);
-      return res.status(500).json({
-        message: data?.error?.message || 'Groq API error',
-      });
+      return res.status(500).json({ message: data?.error?.message || 'Groq API error' });
     }
 
     const raw = data?.choices?.[0]?.message?.content?.trim() || '[]';
-    const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+    // Aggressively strip any markdown
+    const cleaned = raw
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .replace(/^[^[]*(\[)/, '$1')   // strip anything before first [
+      .replace(/\][^]]*$/, ']')       // strip anything after last ]
+      .trim();
 
     let questions;
     try {

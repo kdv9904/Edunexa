@@ -23,6 +23,11 @@ const ViewLectures = () => {
     try { const s = localStorage.getItem(`watched_${courseId}`); return s ? JSON.parse(s) : {}; }
     catch { return {}; }
   });
+  // Tracks lectures where video was watched but quiz was skipped — show quiz button
+  const [quizPending, setQuizPending] = useState(() => {
+    try { const s = localStorage.getItem(`quizpending_${courseId}`); return s ? JSON.parse(s) : {}; }
+    catch { return {}; }
+  });
   const videoRef   = useRef(null);
   const watchedRef = useRef(watchedLectures);
 
@@ -34,10 +39,7 @@ const ViewLectures = () => {
   const [quizLectureId, setQuizLectureId] = useState(null);  // which lecture triggered quiz
 
   // ── Mark watched + trigger quiz ──
-  const markWatched = async (lectureId, lectureTitle) => {
-    if (watchedRef.current[lectureId]) return; // already done
-    console.log('🎬 markWatched triggered for:', lectureTitle, '| quizState:', quizState);
-    if (quizState !== 'idle') return; 
+  const triggerQuiz = async (lectureId, lectureTitle) => {
     setQuizLectureId(lectureId);
     setQuizState('loading');
     setQuizAnswers({});
@@ -46,7 +48,7 @@ const ViewLectures = () => {
     try {
       const res = await axios.post(
         `${serverUrl}/api/quiz/generate`,
-        { lectureTitle },
+        { lectureTitle, courseCategory: selectedCourse?.category },
         { withCredentials: true }
       );
       console.log('✅ Quiz response:', res.data);
@@ -54,10 +56,22 @@ const ViewLectures = () => {
       setQuizState('active');
     } catch (err) {
       console.error('❌ Quiz generation failed:', err.response?.data || err.message);
-      // Fallback: mark complete anyway if quiz fails
       confirmComplete(lectureId);
       setQuizState('idle');
     }
+  };
+
+  const markWatched = async (lectureId, lectureTitle) => {
+    if (watchedRef.current[lectureId]) return; // already fully completed
+    console.log('🎬 markWatched triggered for:', lectureTitle, '| quizState:', quizState);
+    if (quizState !== 'idle') return; // already showing quiz
+
+    // Save pending so user can retake quiz even if they leave
+    const pendingNext = { ...quizPending, [lectureId]: lectureTitle };
+    setQuizPending(pendingNext);
+    localStorage.setItem(`quizpending_${courseId}`, JSON.stringify(pendingNext));
+
+    triggerQuiz(lectureId, lectureTitle);
   };
 
   const confirmComplete = (lectureId) => {
@@ -65,6 +79,11 @@ const ViewLectures = () => {
     watchedRef.current = next;
     setWatchedLectures(next);
     localStorage.setItem(`watched_${courseId}`, JSON.stringify(next));
+    // Remove from pending
+    const pendingNext = { ...quizPending };
+    delete pendingNext[lectureId];
+    setQuizPending(pendingNext);
+    localStorage.setItem(`quizpending_${courseId}`, JSON.stringify(pendingNext));
   };
 
   const handleSubmitQuiz = () => {
@@ -526,6 +545,7 @@ const ViewLectures = () => {
                   {lectures.map((lec, i) => {
                     const isActive  = selectedLecture?._id === lec._id;
                     const isWatched = watchedLectures[lec._id];
+                    const isPending = !isWatched && quizPending[lec._id];
                     return (
                       <button
                         key={lec._id || i}
@@ -536,7 +556,14 @@ const ViewLectures = () => {
                         <span className="vl-lec-btn-name">{lec.lectureTitle}</span>
                         {isWatched
                           ? <div className="vl-tick"><FaCheckCircle size={11} color="#10b981" /></div>
-                          : <FaPlayCircle size={12} color={isActive ? '#10b981' : 'rgba(255,255,255,.18)'} />
+                          : isPending
+                            ? <button
+                                onClick={(e) => { e.stopPropagation(); triggerQuiz(lec._id, lec.lectureTitle); }}
+                                style={{ fontSize: 9, fontWeight: 700, padding: '3px 7px', borderRadius: 6, background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', color: '#f59e0b', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: "'DM Sans', sans-serif" }}
+                              >
+                                Take Quiz
+                              </button>
+                            : <FaPlayCircle size={12} color={isActive ? '#10b981' : 'rgba(255,255,255,.18)'} />
                         }
                       </button>
                     );
