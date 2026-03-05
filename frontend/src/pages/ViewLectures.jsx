@@ -38,6 +38,10 @@ const ViewLectures = () => {
   const [quizResult, setQuizResult]       = useState(null);  // { score, total, passed }
   const [quizLectureId, setQuizLectureId] = useState(null);  // which lecture triggered quiz
 
+  // ── Certificate state ──
+  const [certGenerating, setCertGenerating] = useState(false);
+  const certCanvasRef = useRef(null);
+
   // ── Mark watched + trigger quiz ──
   const triggerQuiz = async (lectureId, lectureTitle) => {
     setQuizLectureId(lectureId);
@@ -113,6 +117,184 @@ const ViewLectures = () => {
     setQuizAnswers({});
     setQuizResult(null);
     setQuizState('active');
+  };
+
+  // ── Certificate Generator ──
+  const generateCertificate = () => {
+    setCertGenerating(true);
+    const canvas = document.createElement('canvas');
+    canvas.width  = 1200;
+    canvas.height = 850;
+    const ctx = canvas.getContext('2d');
+
+    const studentName  = userData?.name || 'Student';
+    const courseTitle  = selectedCourse?.title || 'Course';
+    const instructorName = creatorData?.name || 'Instructor';
+    const dateStr      = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const certId       = `EDX-${Date.now().toString(36).toUpperCase()}`;
+
+    // ── Background ──
+    ctx.fillStyle = '#07090f';
+    ctx.fillRect(0, 0, 1200, 850);
+
+    // ── Subtle grid ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < 1200; x += 56) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 850); ctx.stroke(); }
+    for (let y = 0; y < 850;  y += 56) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1200, y); ctx.stroke(); }
+
+    // ── Emerald glow top-right ──
+    const glow1 = ctx.createRadialGradient(1100, 0, 0, 1100, 0, 500);
+    glow1.addColorStop(0, 'rgba(16,185,129,0.08)');
+    glow1.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow1;
+    ctx.fillRect(0, 0, 1200, 850);
+
+    // ── Indigo glow bottom-left ──
+    const glow2 = ctx.createRadialGradient(0, 850, 0, 0, 850, 400);
+    glow2.addColorStop(0, 'rgba(99,102,241,0.07)');
+    glow2.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow2;
+    ctx.fillRect(0, 0, 1200, 850);
+
+    // ── Outer border ──
+    ctx.strokeStyle = 'rgba(16,185,129,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(36, 36, 1128, 778);
+
+    // ── Inner border ──
+    ctx.strokeStyle = 'rgba(16,185,129,0.08)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(48, 48, 1104, 754);
+
+    // ── Corner accents ──
+    const corners = [[36,36], [1164,36], [36,814], [1164,814]];
+    corners.forEach(([cx, cy]) => {
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ── EDUNEXA branding ──
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#10b981';
+    ctx.letterSpacing = '3px';
+    ctx.textAlign = 'center';
+    ctx.fillText('EDUNEXA', 600, 110);
+
+    // ── Divider line under brand ──
+    ctx.strokeStyle = 'rgba(16,185,129,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(480, 124); ctx.lineTo(720, 124); ctx.stroke();
+
+    // ── "Certificate of Completion" ──
+    ctx.font = 'italic bold 46px Georgia, serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.letterSpacing = '0px';
+    ctx.fillText('Certificate of Completion', 600, 195);
+
+    // ── Decorative line ──
+    const grad = ctx.createLinearGradient(200, 0, 1000, 0);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.3, 'rgba(16,185,129,0.5)');
+    grad.addColorStop(0.7, 'rgba(16,185,129,0.5)');
+    grad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(200, 218); ctx.lineTo(1000, 218); ctx.stroke();
+
+    // ── "This is to certify that" ──
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('This is to certify that', 600, 275);
+
+    // ── Student name ──
+    ctx.font = 'italic bold 58px Georgia, serif';
+    ctx.fillStyle = '#10b981';
+    ctx.fillText(studentName, 600, 355);
+
+    // ── Underline for name ──
+    const nameWidth = ctx.measureText(studentName).width;
+    ctx.strokeStyle = 'rgba(16,185,129,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(600 - nameWidth / 2, 368);
+    ctx.lineTo(600 + nameWidth / 2, 368);
+    ctx.stroke();
+
+    // ── "has successfully completed" ──
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('has successfully completed the course', 600, 415);
+
+    // ── Course title ──
+    ctx.font = 'bold 32px Georgia, serif';
+    ctx.fillStyle = '#ffffff';
+    // Wrap long titles
+    const maxWidth = 800;
+    const words = courseTitle.split(' ');
+    let line = '', lines = [];
+    words.forEach(w => {
+      const test = line + w + ' ';
+      if (ctx.measureText(test).width > maxWidth && line) { lines.push(line.trim()); line = w + ' '; }
+      else line = test;
+    });
+    lines.push(line.trim());
+    lines.forEach((l, i) => ctx.fillText(l, 600, 470 + i * 40));
+
+    const afterTitle = 470 + lines.length * 40;
+
+    // ── Instructor section ──
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText('Instructed by', 600, afterTitle + 40);
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText(instructorName, 600, afterTitle + 65);
+
+    // ── Bottom divider ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, afterTitle + 100); ctx.lineTo(1100, afterTitle + 100); ctx.stroke();
+
+    // ── Bottom row: date | cert id ──
+    const bottomY = afterTitle + 135;
+
+    // Date
+    ctx.textAlign = 'left';
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillText('DATE OF COMPLETION', 120, bottomY);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(dateStr, 120, bottomY + 20);
+
+    // Cert ID center
+    ctx.textAlign = 'center';
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillText('CERTIFICATE ID', 600, bottomY);
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = 'rgba(16,185,129,0.7)';
+    ctx.fillText(certId, 600, bottomY + 20);
+
+    // Total lectures
+    ctx.textAlign = 'right';
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillText('LECTURES COMPLETED', 1080, bottomY);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(`${totalLectures} of ${totalLectures}`, 1080, bottomY + 20);
+
+    // ── Download ──
+    const link = document.createElement('a');
+    link.download = `EduNexa_Certificate_${courseTitle.replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+
+    setCertGenerating(false);
   };
 
   const handleTimeUpdate = () => {
@@ -312,6 +494,34 @@ const ViewLectures = () => {
         .vl-btn-ghost:hover { background: rgba(255,255,255,.1); color: #fff; }
         .vl-btn-primary { padding: 9px 20px; border-radius: 9px; background: #10b981; border: none; color: #07090f; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .2s; }
         .vl-btn-primary:hover { background: #0ea472; }
+
+        /* Certificate banner */
+        .vl-cert-banner {
+          margin-bottom: 20px;
+          border-radius: 16px;
+          border: 1px solid rgba(16,185,129,.3);
+          background: linear-gradient(135deg, rgba(16,185,129,.07) 0%, rgba(99,102,241,.05) 100%);
+          padding: 20px 24px;
+          display: flex; align-items: center; justify-content: space-between; gap: 16px;
+          flex-wrap: wrap;
+          animation: certBannerIn .5s ease;
+        }
+        @keyframes certBannerIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .vl-cert-left { display: flex; align-items: center; gap: 14px; }
+        .vl-cert-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.25); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .vl-cert-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+        .vl-cert-sub { font-size: 12px; color: rgba(255,255,255,.35); }
+        .vl-cert-btn {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 11px 22px; border-radius: 10px;
+          background: #10b981; border: none;
+          color: #07090f; font-size: 13px; font-weight: 700;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: all .2s; white-space: nowrap;
+          box-shadow: 0 4px 20px rgba(16,185,129,.25);
+        }
+        .vl-cert-btn:hover { background: #0ea472; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(16,185,129,.35); }
+        .vl-cert-btn:disabled { background: rgba(255,255,255,.07); color: rgba(255,255,255,.3); cursor: not-allowed; transform: none; box-shadow: none; }
       `}</style>
 
       <div className="vl-root">
@@ -347,9 +557,32 @@ const ViewLectures = () => {
                 <div className="vl-progress-fill" style={{ width: `${progressPct}%` }} />
               </div>
               <div className="vl-progress-sub">
-                {completedCount} of {totalLectures} lectures completed
-                {completedCount === totalLectures && totalLectures > 0 && ' 🎉 Course Complete!'}
+                {completedCount === totalLectures && totalLectures > 0
+                  ? '🎉 All lectures completed — certificate available above!'
+                  : `${completedCount} of ${totalLectures} lectures completed`}
               </div>
+            </div>
+          )}
+
+          {/* Certificate Banner — shows when all lectures completed */}
+          {completedCount === totalLectures && totalLectures > 0 && (
+            <div className="vl-cert-banner">
+              <div className="vl-cert-left">
+                <div className="vl-cert-icon">🏆</div>
+                <div>
+                  <div className="vl-cert-title">You've completed this course!</div>
+                  <div className="vl-cert-sub">
+                    Instructed by <strong style={{ color: 'rgba(255,255,255,.55)' }}>{creatorData?.name || 'Instructor'}</strong> · {totalLectures} lectures · Certificate ready
+                  </div>
+                </div>
+              </div>
+              <button
+                className="vl-cert-btn"
+                onClick={generateCertificate}
+                disabled={certGenerating}
+              >
+                {certGenerating ? '⏳ Generating...' : '⬇ Download Certificate'}
+              </button>
             </div>
           )}
 
