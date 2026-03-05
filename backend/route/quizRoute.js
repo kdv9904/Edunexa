@@ -39,7 +39,7 @@ correctIndex is 0-based.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',   // free, fast, no billing needed
+        model: 'llama-3.3-70b-versatile',   // free, fast, no billing needed
         messages: [
           { role: 'user', content: prompt }
         ],
