@@ -579,7 +579,7 @@ const ViewLectures = () => {
               <button
                 className="vl-cert-btn"
                 onClick={generateCertificate}
-                disabled={certGenerating}
+                disabled={certGenerating || !userData}
               >
                 {certGenerating ? '⏳ Generating...' : '⬇ Download Certificate'}
               </button>
