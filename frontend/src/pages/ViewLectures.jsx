@@ -127,7 +127,7 @@ const ViewLectures = () => {
     canvas.height = 850;
     const ctx = canvas.getContext('2d');
 
-    const studentName  = userData?.name || 'Student';
+    const studentName  =  userData?.name?.trim() || '';
     const courseTitle  = selectedCourse?.title || 'Course';
     const instructorName = creatorData?.name || 'Instructor';
     const dateStr      = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
