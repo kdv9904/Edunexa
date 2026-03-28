@@ -56,17 +56,30 @@ export default function Login() {
   const googleLogin = async () => {
     try {
       const response = await signInWithPopup(auth, provider);
-      const { displayName: name, email } = response.user;
-      const result = await axios.post(serverUrl + "/api/auth/googleauth", { name, email, role: "" }, { withCredentials: true });
+      const { displayName: name, email, photoURL } = response.user;
+      
+      const result = await axios.post(serverUrl + "/api/auth/googleauth", 
+        { name, email, role: "", photoUrl: photoURL }, 
+        { withCredentials: true }
+      );
+
       dispatch(setUserData(result.data));
       toast.success("Google Login Successful");
       navigate("/");
+
     } catch (error) {
+      // ✅ Handle 404 - user doesn't exist
+      if (error.response?.status === 404 && error.response?.data?.shouldSignUp) {
+        toast.error("No account found. Redirecting to signup...");
+        setTimeout(() => navigate('/signup'), 1500);
+        return;
+      }
+
       if (error.code !== "auth/popup-closed-by-user") {
         toast.error("Google sign in failed: " + error.message);
       }
     }
-  };
+};
 
   const t = TESTIMONIALS[testimonialIdx];
 

@@ -34,9 +34,9 @@ const ViewLectures = () => {
   // ── AI Quiz state ──
   const [quizState, setQuizState]         = useState('idle'); // idle | loading | active | passed | dismissed
   const [quizQuestions, setQuizQuestions] = useState([]);
-  const [quizAnswers, setQuizAnswers]     = useState({});    // { qIndex: optionIndex }
-  const [quizResult, setQuizResult]       = useState(null);  // { score, total, passed }
-  const [quizLectureId, setQuizLectureId] = useState(null);  // which lecture triggered quiz
+  const [quizAnswers, setQuizAnswers]     = useState({});    
+  const [quizResult, setQuizResult]       = useState(null); 
+  const [quizLectureId, setQuizLectureId] = useState(null);  
 
   // ── Certificate state ──
   const [certGenerating, setCertGenerating] = useState(false);

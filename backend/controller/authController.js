@@ -166,16 +166,13 @@ export const googleAuth = async(req, res) => {
     try {
         const { name, email, role, photoUrl } = req.body;
 
-        // ✅ FIX: use let not const, so we can reassign when creating new user
         let user = await User.findOne({ email });
 
+        // ✅ If no account exists → tell frontend to redirect to signup
         if (!user) {
-            // ✅ FIX: reassign let variable instead of const
-            user = await User.create({
-                name,
-                email,
-                role,
-                photoUrl: photoUrl || "",
+            return res.status(404).json({ 
+                message: "No account found. Please sign up first.",
+                shouldSignUp: true  // ← frontend can use this flag
             });
         }
 
@@ -190,6 +187,6 @@ export const googleAuth = async(req, res) => {
         res.status(200).json({ user });
     } catch(error) {
         console.error('Error during Google auth:', error);
-        return res.status(500).json({ message: "Internal server error", error: error.message });
+        return res.status(500).json({ message: "Internal server error" });
     }
 }
