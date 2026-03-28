@@ -63,7 +63,8 @@ function Card({ thumbnail, title, category, price, id, index }) {
             setReviewsCount(valid.length);
           }
         }
-      } catch { toast.error("Error loading ratings"); }
+      } catch { setCourseRating(0);
+  setReviewsCount(0); }
       finally { setRatingLoading(false); }
     };
     fetchRating();
