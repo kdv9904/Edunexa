@@ -2,7 +2,6 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 
-// Ensure public directory exists
 if (!fs.existsSync("./public")) {
     fs.mkdirSync("./public", { recursive: true });
 }

@@ -2,6 +2,7 @@ import Course from "../model/courseModel.js";
 import uploadOnCloudinary from '../config/cloudinary.js';
 import Lecture from "../model/lactureModel.js";
 import User from '../model/userModel.js';
+
 export const createCourse = async(req, res) =>{
     try {
         const {title, category} = req.body;
@@ -103,7 +104,6 @@ export const removeCourse = async(req,res) =>{
     }
 }
 
-//for lecture
 export const createLecture = async (req, res) => {
   try {
     const { lectureTitle } = req.body;
@@ -215,8 +215,6 @@ export const removeLecture = async(req,res)=>{
     }
 }
 
-//get Creator
-
 export const getCreatorById = async(req,res)=>{
     try{
         const {userId} = req.body;
@@ -231,12 +229,10 @@ export const getCreatorById = async(req,res)=>{
     }
 }
 
-// ✅ Educator Stats (for dashboard)
 export const getEducatorStats = async (req, res) => {
   try {
     const userId = req.userId;
 
-    // Get all courses created by this educator
     const courses = await Course.find({ creator: userId })
       .populate("enrolledStudents", "name email");
 
@@ -250,7 +246,6 @@ export const getEducatorStats = async (req, res) => {
       totalEarnings += (course.price || 0) * enrolled;
     });
 
-    // temporary chart (later can link to payment data)
     const monthlyEarnings = [
       { month: "Jan", earning: totalEarnings * 0.05 },
       { month: "Feb", earning: totalEarnings * 0.1 },

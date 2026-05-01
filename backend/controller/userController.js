@@ -2,15 +2,12 @@ import User from './../model/userModel.js';
 import path from "path";
 import uploadOnCloudinary from "../config/cloudinary.js";
 
-// Get current logged-in user
 export const getCurrentUser = async (req, res) => {
   try {
-    // Make sure JWT middleware sets req.userId
     const user = await User.findById(req.userId).select('-password').populate("enrolledCourses");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // Wrap in `user` key for frontend consistency
     return res.status(200).json({ user });
   } catch (error) {
     console.error("GetCurrentUser Error:", error);
@@ -18,7 +15,6 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-// Update profile
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
@@ -28,7 +24,7 @@ export const updateProfile = async (req, res) => {
     if (req.file) {
       const absolutePath = path.resolve(req.file.path);
       const cloudRes = await uploadOnCloudinary(absolutePath);
-      photoUrl = cloudRes.url; // <-- store only the URL string
+      photoUrl = cloudRes.url;
     }
 
     const updateData = { name, description };

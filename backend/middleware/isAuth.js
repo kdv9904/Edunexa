@@ -10,7 +10,6 @@ const isAuth = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Make sure your JWT is signed with { userId: user._id }
     req.userId = decoded.userId;
 
     next();

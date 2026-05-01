@@ -32,13 +32,13 @@ export const createReview = async(req, res) =>{
 export const getReviews = async(req, res)=>{
      try {
          const reviews = await Review.find({})
-           .populate("user", "name photoUrl description") // populate user with specific fields
-           .populate("course", "title instructor") // populate course with specific fields
+           .populate("user", "name photoUrl description")
+           .populate("course", "title instructor")
            .sort({reviewedAt: -1});
          
          return res.status(200).json({ 
            success: true,
-           review: reviews // Keep as 'review' to match your existing structure
+           review: reviews
          });
      } catch (error) {
          console.error("GetReviews Error:", error);

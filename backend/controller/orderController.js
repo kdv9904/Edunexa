@@ -71,9 +71,6 @@ export const verifyPayment = async (req, res) => {
     }
 
     console.log("✅ All required fields present");
-    
-    // For now, let's skip signature verification to test the flow
-    console.log("🟡 Skipping signature verification for testing...");
 
     const orderInfo = await RazorPayInstance.orders.fetch(razorpay_order_id);
     console.log("💰 Razorpay order info:", {
@@ -148,7 +145,6 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
-// Add this to your course or user controller
 export const checkEnrollment = async (req, res) => {
   try {
     const { userId, courseId } = req.body;

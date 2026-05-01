@@ -29,7 +29,7 @@ const sendMail = async ({ to, otp }) => {
         <h2 style="color: #2c7be5;">${otp}</h2>
         <p>This OTP expires in <b>10 minutes</b>.</p>
         <br/>
-        <p>Regards,<br/>AILMS Team</p>
+        <p>Regards,<br/>Edunexa Team</p>
       </div>
     `,
   });
