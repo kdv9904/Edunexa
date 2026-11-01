@@ -16,8 +16,11 @@ const port = process.env.PORT || 8000;
 const app=express()
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({origin:"https://edunexa-1-mad5.onrender.com",
-credentials:true,
+
+let allowedOrigins = process.env.CORS_ORIGINS?.split(',')?.map(origin => origin.trim());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
 }))
 
 app.use('/api/auth',authRoute);
